@@ -1,4 +1,6 @@
 /* ============ App shell: lobby, menu, game lifecycle ============ */
+const APP_VERSION = '2'; // bump together with the ?v= in index.html
+
 const App = (() => {
   const $ = sel => document.querySelector(sel);
 
@@ -44,7 +46,7 @@ const App = (() => {
   function connectedFlow() {
     if (!helloSent) {
       helloSent = true;
-      Net.send({ t: 'hello', name: myName });
+      Net.send({ t: 'hello', name: myName, v: APP_VERSION });
     }
     enterMenu();
   }
@@ -156,14 +158,21 @@ const App = (() => {
       case 'hello':
         partnerName = d.name || 'Partner';
         connectedFlow();
+        if (d.v !== APP_VERSION) {
+          toast('⚠️ You two have different versions — refresh both browsers!');
+        }
         break;
       case 'menu':
         destroyGame();
         enterMenu();
         break;
       case 'game':
+        if (!Games[d.g]) {
+          toast('⚠️ New game missing — refresh both browsers to update!');
+          return;
+        }
         startGame(d.g);
-        if (Games[d.g]) toast(`Playing ${Games[d.g].name}!`);
+        toast(`Playing ${Games[d.g].name}!`);
         break;
       case 'state':
         if (currentGame && currentGame.id === d.g) {
