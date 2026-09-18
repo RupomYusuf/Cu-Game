@@ -69,10 +69,19 @@ DATA.decks = {
 
 /* --- Intimate section (18+, consent-gated) ---
  * daresApart = doable over a video call; daresTogether = need to be in the
- * same room. Cards tagged 🏠 only appear when playing together. */
-DATA.intimate = {
+ * same room. Cards tagged 🏠 only appear when playing together. */DATA.intimate = {
   soft: {
     name: 'Intimate 💋',
+    wheel: [
+      "Blow the slowest kiss of your life 💌",
+      "Kiss the camera for ten seconds 💋",
+      "Say one thing you want tonight 🌙",
+      "Wink, then bite your lip. Hold it five seconds 😏",
+      "Give me a compliment that makes me blush ☺️",
+      "Show me your best 'come here' look 👀",
+      "Describe your perfect kiss in five words 🗣️",
+      "Moan my name. Softly. 😮‍💨",
+    ],
     dice: {
       whats: ['Blow a kiss', 'Wink slowly', 'Bite your lip', 'Trace your lips on the camera', 'Hug yourself where you want my arms', "Say 'I want you' in a whisper", 'Blow a kiss to the camera and smile', 'Run your fingers through your hair'],
       hows: ['slowly', "like it's our last", 'with a smile', 'with your eyes closed', 'in slow motion', 'twice', 'without breaking eye contact', 'like you mean it'],
@@ -127,6 +136,14 @@ DATA.intimate = {
       "Selfie by candlelight 🕯️",
       "The outfit you'd pick for our next date 👗",
       "A mid-laugh photo — I'll wait 😄",
+      "Kiss the camera and freeze the last frame 📸",
+      "Your hands, up close. I'll imagine the rest 🤲",
+      "Three shots in a row: kiss, wink, smirk 💋😉😏",
+      "The view from where you'd cuddle me 🛋️",
+      "One thing you wish I was holding right now 🎁",
+      "Your 'thinking about you' face — caught candidly 💭",
+      "Snap whatever's closest to your left. Make it romantic 🌷",
+      "The playlist you'd play tonight — screenshot it 🎶",
     ],
     cards: [
       "What's your favorite memory of us being close?",
@@ -159,6 +176,28 @@ DATA.intimate = {
   },
   extreme: {
     name: 'Extremely Intimate 🔥',
+    wheel: [
+      "Take off one item — on camera. Tease the whole way.",
+      "Thirty seconds: describe what you want tonight. No filtering.",
+      "Kiss the camera like it's my neck. Slowly.",
+      "Say exactly where you want me. Right now.",
+      "Trace with your hands where mine should be.",
+      "Whisper your dirtiest fantasy. No cutting it short.",
+      "One moan — my name in it. Make it count.",
+      "Show me your favorite spot to be kissed. Trace it. Slowly.",
+    ],
+    levels: [
+      "Level 1 · Send a snap of your lips, inches from the lens 💋",
+      "Level 2 · Kiss the camera for 15 seconds straight 🎥",
+      "Level 3 · Tell me the first thing you'd do if I were beside you 👀",
+      "Level 4 · One item of clothing, off. On camera. Now. 🔥",
+      "Level 5 · Describe your fantasy in three sentences — no editing ✍️",
+      "Level 6 · Guide the camera where you want my touch. Slowly. 🖐️",
+      "Level 7 · Say my name the way you'll say it tonight 😮‍💨",
+      "Level 8 · Lose one more piece. Tease first. 🖤",
+      "Level 9 · Whisper exactly how tonight ends for us 🌙",
+      "Level 10 · Full send: one snap, no rules, total trust 🔥",
+    ],
     dice: {
       whats: ['Look into the camera and undress me with your eyes', 'Whisper your favorite fantasy about', 'Bite your lip thinking about', 'Describe how you would kiss', 'Blow a slow, deliberate kiss to', 'Say the naughtiest thing you can imagine about', 'Trace your hands over yourself imagining they are', 'Moan softly, then wink at'],
       hows: ['slowly', 'without smiling', 'in detail', 'twice', 'with your eyes closed', 'like it is a secret', 'in a whisper', 'and then blush'],
@@ -215,7 +254,22 @@ DATA.intimate = {
       "A snap mid-undress, down to whatever you dare 🖤",
       "Snap the light in your room in your most romantic filter 🌹",
       "Kiss the camera with everything you've got 💋",
-      "Surprise me. Your pick — no rules 🔥",
+      "POV: I just walked in. Show me the first three seconds 🚪",
+      "Lights off, flash on. One shot. No preview 📱",
+      "Video: ten seconds of you… I'll let my imagination finish it 🎥",
+      "From above — the sheet-only shot 🛏️",
+      "Your favorite curves, shadow edition 🌑",
+      "Undressing snapshot — the moment before the moment 🖤",
+      "A hand-placement hint. Cropped. We both know what it means 😏",
+      "Voice note instead of a snap: fifteen seconds, say everything 🎙️",
+      "Mirror snap with steam on the glass 🪞",
+      "The towel drop — the last frame before it goes 🚿",
+      "Your lips, inches from the lens 💋",
+      "Straddle the pillow. Yes, really. Snap the silhouette 😈",
+      "Video: a slow 360° spin — nothing left to hide, if you dare 🌀",
+      "Mid-moment: whatever you're doing right now. No staging. 📵",
+      "The 'no clothes survived the night' floor shot 🧺",
+      "Surprise me. Your pick — no rules, total trust 🔥",
     ],
     cards: [
       "Truth: describe exactly what you want me to do to you tonight.",
@@ -305,4 +359,52 @@ DATA.words = [
   // hard
   "gravity", "time zone", "deja vu", "jet lag", "stage fright", "brainstorm",
   "shadow", "echo", "tug of war", "sleepwalking", "time travel", "magnet",
+];
+
+/* --- This or That --- */
+DATA.thisorthat = [
+  ["Cuddles", "Kisses"], ["Beach", "Mountains"], ["Sweet texts", "Surprise visits"],
+  ["Netflix night", "Night out"], ["Morning person", "Night owl"], ["Coffee", "Tea"],
+  ["Summer", "Winter"], ["Pizza date", "Sushi date"], ["Hand holding", "Arm around me"],
+  ["Rom-com", "Thriller"], ["Breakfast in bed", "Dinner under stars"], ["Books", "Movies"],
+  ["Cats", "Dogs"], ["Planned dates", "Spontaneous adventures"], ["City lights", "Starry skies"],
+  ["Slow dancing", "Singing together"], ["Love letters", "Voice notes"], ["Hugs from behind", "Forehead kisses"],
+  ["Weekend getaway", "Stay-at-home day"], ["Sweet", "Spicy"], ["Sunrise", "Sunset"],
+  ["Cozy socks", "Bare feet"], ["Train ride", "Road trip"], ["Pancakes", "Waffles"],
+  ["Board games", "Video games"], ["Rainy days", "Snowy days"], ["Early night", "Late night talk"],
+  ["Surprise party", "Quiet birthday"], ["Matching outfits", "Contrasting styles"], ["Big wedding", "Elopement"],
+];
+
+/* --- Never Have I Ever --- */
+DATA.nhie = [
+  "…stalked your social media from years before we met 👀",
+  "…practiced what I'd say to you in the mirror 🪞",
+  "…fallen asleep mid-call with you 😴",
+  "…re-read our old texts and smiled like an idiot 💬",
+  "…lied about being 'five minutes away' ⏰",
+  "…sung a song about us in the shower 🎤",
+  "…googled 'cute things to say to your partner' 🔍",
+  "…eaten the snack we were supposed to share 🍫",
+  "…imagined our wedding before we ever talked about it 💍",
+  "…cried at a movie and blamed allergies 😢",
+  "…screamed internally when you first texted me 📱",
+  "…worn your hoodie/clothes when you weren't around 🧥",
+  "…told a friend everything about our first kiss 😄",
+  "…planned a whole future in my head after date one 🚀",
+  "…screenshot a cute conversation to keep forever 📸",
+  "…pretended to be cold just to cuddle closer 🥶",
+  "…forgotten an important date and panicked 🗓️",
+  "…talked about you to my pets 🐾",
+  "…saved a voicemail or voice note just to hear it again 🔁",
+  "…danced alone to our song 💃",
+  "…burned the food I planned to impress you with 🔥",
+  "…written a text, deleted it, rewritten it ten times ✍️",
+  "…checked my phone hoping it was you ☝️",
+  "…bragged about you to a total stranger 😎",
+  "…named a future kid in my head 👶",
+  "…steal-kissed you in front of people to make them jealous 😘",
+  "…fallen harder for you than I let on ❤️",
+  "…daydreamed about you during something important 🌊",
+  "…kept a gift hidden for months waiting for the right day 🎁",
+  "…loved you a little more every single day 🌱",
 ];

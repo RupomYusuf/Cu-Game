@@ -437,6 +437,291 @@ Games.likely = {
 };
 
 /* =====================================================
+ * 5b. This or That
+ * ===================================================== */
+Games.thisorthat = {
+  name: 'This or That', icon: '💘', desc: 'How in sync are you?',
+  init(root, api) {
+    const S = { q: 0, mine: null, theirs: null, synced: 0, rounds: 0 };
+    root.innerHTML = `
+      <div class="game-panel">
+        <div class="game-prompt">Pick whichever you prefer — secretly. Do you match?</div>
+        <div id="tot-q" class="likely-question" style="font-size:1.9rem"></div>
+        <div class="likely-buttons" id="tot-buttons"></div>
+        <div id="tot-result"></div>
+        <div style="margin-top:14px"><button class="btn btn-primary" id="tot-next" style="display:none">Next →</button></div>
+      </div>`;
+    const qEl = root.querySelector('#tot-q');
+    const btnsEl = root.querySelector('#tot-buttons');
+    const resultEl = root.querySelector('#tot-result');
+    const nextBtn = root.querySelector('#tot-next');
+
+    function render() {
+      const pair = DATA.thisorthat[S.q % DATA.thisorthat.length];
+      qEl.textContent = `${pair[0]}  or  ${pair[1]}?`;
+      btnsEl.innerHTML = '';
+      const revealed = S.mine !== null && S.theirs !== null;
+      pair.forEach((label, i) => {
+        const b = document.createElement('button');
+        b.className = 'likely-btn';
+        b.textContent = label;
+        if (revealed) {
+          b.disabled = true;
+          if (S.mine === i) b.classList.add('selected');
+          if (S.mine === S.theirs && S.mine === i) b.classList.add('match');
+        } else {
+          if (S.mine === i) b.classList.add('selected');
+          b.onclick = () => {
+            S.mine = i;
+            render();
+            api.send({ kind: 'pick', pick: i });
+          };
+        }
+        btnsEl.appendChild(b);
+      });
+      if (revealed) {
+        if (S.mine === S.theirs) {
+          resultEl.innerHTML = `<div class="result-banner win">Match! 💞 You're in sync. (+1)</div>`;
+        } else {
+          resultEl.innerHTML = `<div class="result-banner lose">Different! Time to convince each other 😄</div>`;
+        }
+        nextBtn.style.display = 'inline-block';
+      } else if (S.mine !== null) {
+        resultEl.innerHTML = `<p class="game-prompt">Waiting for ${esc(api.partnerName)}…</p>`;
+      } else {
+        resultEl.innerHTML = '';
+      }
+      api.setScore(`In sync: ${S.synced}/${S.rounds}`);
+    }
+
+    nextBtn.onclick = () => {
+      if (S.mine === null || S.theirs === null) return;
+      S.q++;
+      S.mine = null;
+      S.theirs = null;
+      resultEl.innerHTML = '';
+      nextBtn.style.display = 'none';
+      render();
+      api.send({ kind: 'next', q: S.q });
+    };
+
+    render();
+    return {
+      onMsg(d) {
+        if (d.kind === 'pick' && S.theirs === null) {
+          S.theirs = d.pick;
+          S.rounds++;
+          if (S.mine !== null && S.mine === S.theirs) S.synced++;
+          render();
+        } else if (d.kind === 'next') {
+          S.q = d.q; S.mine = null; S.theirs = null;
+          resultEl.innerHTML = '';
+          nextBtn.style.display = 'none';
+          render();
+        }
+      },
+      destroy() {}
+    };
+  }
+};
+
+/* =====================================================
+ * 5c. Never Have I Ever
+ * ===================================================== */
+Games.nhie = {
+  name: 'Never Have I Ever', icon: '🙈', desc: 'Confessions unlocked',
+  init(root, api) {
+    const S = { q: 0, mine: null, theirs: null };
+    root.innerHTML = `
+      <div class="game-panel">
+        <div class="game-prompt">Never have I ever…</div>
+        <div class="big-card-question" id="nhie-q" style="min-height:80px"></div>
+        <div class="likely-buttons" id="nhie-buttons"></div>
+        <div id="nhie-result"></div>
+        <div style="margin-top:14px"><button class="btn btn-primary" id="nhie-next" style="display:none">Next →</button></div>
+      </div>`;
+    const qEl = root.querySelector('#nhie-q');
+    const btnsEl = root.querySelector('#nhie-buttons');
+    const resultEl = root.querySelector('#nhie-result');
+    const nextBtn = root.querySelector('#nhie-next');
+
+    function render() {
+      qEl.textContent = DATA.nhie[S.q % DATA.nhie.length];
+      btnsEl.innerHTML = '';
+      const revealed = S.mine !== null && S.theirs !== null;
+      [['have', 'I have 🙋'], ['never', 'Never 🙅']].forEach(([val, label]) => {
+        const b = document.createElement('button');
+        b.className = 'likely-btn';
+        b.textContent = label;
+        if (revealed) {
+          b.disabled = true;
+          if (S.mine === val) b.classList.add('selected');
+          if (val === 'have' && (S.mine === val || S.theirs === val)) b.classList.add('selected');
+        } else {
+          if (S.mine === val) b.classList.add('selected');
+          b.onclick = () => {
+            S.mine = val;
+            render();
+            api.send({ kind: 'ans', ans: val });
+          };
+        }
+        btnsEl.appendChild(b);
+      });
+      if (revealed) {
+        const iHave = S.mine === 'have', theyHave = S.theirs === 'have';
+        let msg;
+        if (iHave && theyHave) msg = `BOTH of you have! 😂 Details. Now.`;
+        else if (iHave) msg = `Guilty: ${esc(api.myName)} has 🙋 ${esc(api.partnerName)} never has 🙅`;
+        else if (theyHave) msg = `Guilty: ${esc(api.partnerName)} has 🙋 ${esc(api.myName)} never has 🙅`;
+        else msg = `Neither of you! Wholesome 💛`;
+        resultEl.innerHTML = `<div class="result-banner ${iHave || theyHave ? 'lose' : 'win'}">${msg}</div>`;
+        nextBtn.style.display = 'inline-block';
+      } else if (S.mine !== null) {
+        resultEl.innerHTML = `<p class="game-prompt">Waiting for ${esc(api.partnerName)}…</p>`;
+      } else {
+        resultEl.innerHTML = '';
+      }
+    }
+
+    nextBtn.onclick = () => {
+      if (S.mine === null || S.theirs === null) return;
+      S.q++;
+      S.mine = null;
+      S.theirs = null;
+      resultEl.innerHTML = '';
+      nextBtn.style.display = 'none';
+      render();
+      api.send({ kind: 'next', q: S.q });
+    };
+
+    render();
+    return {
+      onMsg(d) {
+        if (d.kind === 'ans' && S.theirs === null) {
+          S.theirs = d.ans;
+          render();
+        } else if (d.kind === 'next') {
+          S.q = d.q; S.mine = null; S.theirs = null;
+          resultEl.innerHTML = '';
+          nextBtn.style.display = 'none';
+          render();
+        }
+      },
+      destroy() {}
+    };
+  }
+};
+
+/* =====================================================
+ * 5d. Two Truths & a Lie
+ * ===================================================== */
+Games.ttl = {
+  name: 'Two Truths & a Lie', icon: '🕵️', desc: 'Can you fool your love?',
+  init(root, api) {
+    const S = { turn: 0, items: null, lie: null, myPick: null, theirPick: null, score: { me: 0, them: 0 } };
+    const myTurn = () => (S.turn === 0) === api.isHost;
+
+    root.innerHTML = `<div class="game-panel" id="ttl-panel"></div>`;
+    const panel = root.querySelector('#ttl-panel');
+
+    function render() {
+      panel.innerHTML = '';
+      const mine = myTurn();
+      if (S.items === null) {
+        if (mine) {
+          panel.innerHTML = `
+            <h3 class="likely-question" style="font-size:1.6rem">Your turn — fool ${esc(api.partnerName)}!</h3>
+            <p class="game-prompt">Write two truths and one lie. Mark which one is the lie.</p>
+            ${[0, 1, 2].map(i => `
+              <div style="display:flex;gap:8px;align-items:center;margin:8px 0">
+                <input type="radio" name="ttl-lie" id="ttl-lie-${i}" style="accent-color:var(--rose)" ${i === 0 ? 'checked' : ''}>
+                <input type="text" id="ttl-in-${i}" maxlength="80" placeholder="Statement ${i + 1}" style="text-align:left">
+              </div>`).join('')}
+            <button class="btn btn-primary" id="ttl-send" style="margin-top:8px">Send 🕵️</button>`;
+          panel.querySelector('#ttl-send').onclick = () => {
+            const items = [0, 1, 2].map(i => panel.querySelector(`#ttl-in-${i}`).value.trim());
+            if (items.some(v => !v)) { api.toast('Fill in all three statements!'); return; }
+            const lie = [0, 1, 2].findIndex(i => panel.querySelector(`#ttl-lie-${i}`).checked);
+            S.items = items;
+            S.lie = lie;
+            render();
+            api.send({ kind: 'set', items, lie });
+          };
+        } else {
+          panel.innerHTML = `
+            <h3 class="likely-question" style="font-size:1.6rem">Two Truths & a Lie 🕵️</h3>
+            <p class="game-prompt">Waiting for ${esc(api.partnerName)} to write their three statements…</p>`;
+        }
+      } else if (S.myPick === null && S.theirPick === null) {
+        if (!mine) {
+          panel.innerHTML = `
+            <h3 class="likely-question" style="font-size:1.6rem">Spot the lie!</h3>
+            <p class="game-prompt">One of these is a lie:</p>
+            ${S.items.map((t, i) => `<button class="likely-btn" data-i="${i}" style="display:block;width:100%;max-width:420px;margin:8px auto;text-align:left;font-weight:400;font-size:1rem">${esc(t)}</button>`).join('')}`;
+          panel.querySelectorAll('.likely-btn').forEach(b => {
+            b.onclick = () => {
+              S.myPick = +b.dataset.i;
+              render();
+              api.send({ kind: 'pick', pick: S.myPick });
+            };
+          });
+        } else {
+          panel.innerHTML = `<p class="game-prompt">Waiting for ${esc(api.partnerName)} to guess the lie…🤞</p>`;
+        }
+      } else {
+        const revealed = S.theirPick !== null || S.myPick !== null;
+        const guess = mine ? S.theirPick : S.myPick;
+        if (guess === null) {
+          panel.innerHTML = `<p class="game-prompt">Waiting for the verdict…🤞</p>`;
+          return;
+        }
+        const caught = guess === S.lie;
+        const list = S.items.map((t, i) => {
+          const marks = [];
+          if (i === S.lie) marks.push('🤥 the lie');
+          if (i === guess) marks.push('🎯 their guess');
+          return `<p style="margin:8px 0;font-weight:${i === S.lie ? '700' : '400'}">${esc(t)} ${marks.length ? '<br><small style="color:var(--rose-dark)">' + marks.join(' · ') + '</small>' : ''}</p>`;
+        }).join('');
+        panel.innerHTML = `
+          <div class="result-banner ${caught ? (mine ? 'lose' : 'win') : (mine ? 'win' : 'lose')}">
+            ${caught ? `${esc(mine ? api.partnerName : api.myName)} caught the lie! 🎉` : `${esc(mine ? api.myName : api.partnerName)} was fooled! 🤥`}
+          </div>
+          ${list}
+          <button class="btn btn-primary" id="ttl-next" style="margin-top:10px">Next round →</button>`;
+        panel.querySelector('#ttl-next').onclick = () => {
+          S.turn ^= 1;
+          S.items = null; S.lie = null; S.myPick = null; S.theirPick = null;
+          render();
+          api.send({ kind: 'next' });
+        };
+        api.setScore(`Score: ${mine ? S.score.them : S.score.me} — ${mine ? S.score.me : S.score.them}`);
+      }
+    }
+
+    render();
+    return {
+      onMsg(d) {
+        if (d.kind === 'set') {
+          S.items = d.items;
+          S.lie = d.lie;
+          render();
+        } else if (d.kind === 'pick') {
+          S.theirPick = d.pick;
+          const caught = S.theirPick === S.lie;
+          if (caught) S.score.them++; else S.score.me++;
+          render();
+        } else if (d.kind === 'next') {
+          S.turn ^= 1;
+          S.items = null; S.lie = null; S.myPick = null; S.theirPick = null;
+          render();
+        }
+      },
+      destroy() {}
+    };
+  }
+};
+
+/* =====================================================
  * 6. Intimate (18+ — requires consent from BOTH partners)
  * ===================================================== */
 Games.intimate = {
@@ -447,12 +732,14 @@ Games.intimate = {
       phase: 'select', // select | waiting | consent | play
       level: null,     // 'soft' | 'extreme'
       pending: null,
-      mode: 'menu',    // menu | cards | dice | tod | timer | snaps
+      mode: 'menu',    // menu | cards | dice | tod | timer | snaps | wheel | levels
       idx: 0,
       apart: true,     // playing from two different places (camera/snaps only)
       snap: null,      // index of the current snap challenge
       tod: null,       // { turn, showing:{type,text}|null, passes:{me,them} }
       timer: null,     // { end, iv, dare }
+      lv: 0,           // level-up progress
+      deg: 0,          // accumulated wheel rotation
     };
 
     root.innerHTML = `<div class="game-panel" id="in-panel"></div>`;
@@ -529,6 +816,8 @@ Games.intimate = {
         else if (S.mode === 'snaps') renderSnaps();
         else if (S.mode === 'tod') renderTod();
         else if (S.mode === 'timer') renderTimer();
+        else if (S.mode === 'wheel') renderWheel();
+        else if (S.mode === 'levels') renderLevels();
       }
     }
 
@@ -538,6 +827,7 @@ Games.intimate = {
       S.mode = mode;
       S.snap = null;
       if (mode === 'tod' && !S.tod) S.tod = { turn: 0, showing: null, passes: { me: 0, them: 0 } };
+      if (mode === 'levels') S.lv = 0;
       render();
       if (sync) api.send({ kind: 'mode', mode });
     }
@@ -562,6 +852,8 @@ Games.intimate = {
           <button class="game-card" data-mode="dice"><span class="gc-icon">🎲</span><span class="gc-name">Love Dice</span></button>
           <button class="game-card" data-mode="tod"><span class="gc-icon">🎯</span><span class="gc-name">Truth or Dare</span></button>
           <button class="game-card" data-mode="timer"><span class="gc-icon">⏱️</span><span class="gc-name">60-Second Challenge</span></button>
+          <button class="game-card" data-mode="wheel"><span class="gc-icon">🎡</span><span class="gc-name">${S.level === 'extreme' ? 'Wheel of Fire' : 'Spin the Wheel'}</span></button>
+          ${S.level === 'extreme' ? '<button class="game-card" data-mode="levels"><span class="gc-icon">🏆</span><span class="gc-name">Level Up</span></button>' : ''}
         </div>
         <div style="margin-top:16px">
           <button class="btn btn-ghost" style="color:var(--rose-dark);border-color:var(--rose-light)" id="in-apart">${S.apart ? '📱 Playing apart' : '🏠 Playing together'}</button>
@@ -646,6 +938,26 @@ Games.intimate = {
       return S.apart ? cfg.daresApart : cfg.daresTogether;
     }
 
+    /* animate the wheel to a wedge (works for both local spins and partner spins) */
+    function wheelSpinTo(i) {
+      const cv = panel.querySelector('#wheel-cv');
+      if (!cv) return;
+      const cfg = L[S.level];
+      const N = cfg.wheel.length;
+      const target = ((90 - i * (360 / N) - 180 / N) % 360 + 360) % 360;
+      const cur = ((S.deg % 360) + 360) % 360;
+      S.deg += (target - cur + 360) % 360 + 1440;
+      requestAnimationFrame(() => { cv.style.transform = `rotate(${S.deg}deg)`; });
+      const spinBtn = panel.querySelector('#wheel-spin');
+      if (spinBtn) spinBtn.disabled = true;
+      panel.querySelector('#wheel-out').textContent = '…';
+      setTimeout(() => {
+        panel.querySelector('#wheel-out').textContent = cfg.wheel[i];
+        const btn = panel.querySelector('#wheel-spin');
+        if (btn) btn.disabled = false;
+      }, 3200);
+    }
+
     /* ---------- snaps ---------- */
     function renderSnaps() {
       const cfg = L[S.level];
@@ -682,6 +994,93 @@ Games.intimate = {
         };
         panel.querySelector('#snap-back2').onclick = () => { S.snap = null; toMode('menu'); };
       }
+    }
+
+    /* ---------- spin the wheel / wheel of fire ---------- */
+    function renderWheel() {
+      const cfg = L[S.level];
+      const isExtreme = S.level === 'extreme';
+      panel.innerHTML = `
+        <h3 class="likely-question" style="font-size:1.7rem">${isExtreme ? 'Wheel of Fire 🔥' : 'Spin the Wheel 💋'}</h3>
+        <p class="game-prompt">Whatever it lands on, you do. Either of you can spin!</p>
+        <div style="position:relative;width:320px;margin:0 auto">
+          <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);border-left:15px solid transparent;border-right:15px solid transparent;border-top:24px solid var(--gold);z-index:2"></div>
+          <canvas id="wheel-cv" width="320" height="320" style="display:block;transition:transform 3s cubic-bezier(.12,.8,.2,1)"></canvas>
+        </div>
+        <div id="wheel-out" class="big-card-question" style="min-height:70px"></div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px">
+          <button class="btn btn-primary btn-big" id="wheel-spin">Spin 🎡</button>
+          ${backBtn().outerHTML.replace('<button', '<button id="wheel-back"')}
+        </div>`;
+      panel.querySelector('#wheel-back').onclick = () => toMode('menu');
+
+      const cv = panel.querySelector('#wheel-cv');
+      const ctx = cv.getContext('2d');
+      const N = cfg.wheel.length;
+      const EMO = ['💋', '🔥', '💝', '😏', '🌹', '🌙', '✨', '😈', '💌', '⭐'];
+      for (let i = 0; i < N; i++) {
+        const a0 = (i * 360 / N - 90) * Math.PI / 180;
+        const a1 = ((i + 1) * 360 / N - 90) * Math.PI / 180;
+        ctx.beginPath();
+        ctx.moveTo(160, 160);
+        ctx.arc(160, 160, 155, a0, a1);
+        ctx.fillStyle = isExtreme ? (i % 2 ? '#8f1d3f' : '#c22e57') : (i % 2 ? '#f6b93b' : '#e75480');
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.save();
+        const mid = (i * 360 / N - 90 + 180 / N) * Math.PI / 180;
+        ctx.translate(160 + Math.cos(mid) * 105, 160 + Math.sin(mid) * 105);
+        ctx.font = '30px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(EMO[i % EMO.length], 0, 0);
+        ctx.restore();
+      }
+
+      let spinning = false;
+      panel.querySelector('#wheel-spin').onclick = () => {
+        if (spinning) return;
+        spinning = true;
+        const i = rnd(cfg.wheel);
+        wheelSpinTo(i);
+        api.send({ kind: 'spin', i });
+        setTimeout(() => { spinning = false; }, 3300);
+      };
+    }
+
+    /* ---------- level up (extreme only) ---------- */
+    function renderLevels() {
+      const cfg = L[S.level];
+      if (S.lv >= cfg.levels.length) {
+        panel.innerHTML = `
+          <div class="big-card-question">All 10 levels complete 🏆🔥</div>
+          <p class="game-prompt">You two are unstoppable. Or unstoppable-adjacent 😏</p>
+          <div style="margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+            <button class="btn btn-primary" id="lv-restart">Play again ↺</button>
+            ${backBtn().outerHTML.replace('<button', '<button id="lv-back"')}
+          </div>`;
+        panel.querySelector('#lv-restart').onclick = () => { S.lv = 0; render(); api.send({ kind: 'lv', v: 0 }); };
+        panel.querySelector('#lv-back').onclick = () => toMode('menu');
+        return;
+      }
+      panel.innerHTML = `
+        <h3 class="likely-question" style="font-size:1.7rem">Level Up 🔥</h3>
+        <div class="card-tag">Level ${S.lv + 1} of ${cfg.levels.length}</div>
+        <div class="big-card-question">${esc(cfg.levels[S.lv])}</div>
+        <p class="game-prompt">Complete the level to unlock the next one. Either of you can advance.</p>
+        <div style="margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-primary" id="lv-done">Done ✓</button>
+          ${backBtn().outerHTML.replace('<button', '<button id="lv-back2"')}
+        </div>
+        <p class="muted" style="margin-top:10px;font-size:.8rem">Can't or won't? Skip nothing — stop anytime. No pressure, ever. 💛</p>`;
+      panel.querySelector('#lv-back2').onclick = () => toMode('menu');
+      panel.querySelector('#lv-done').onclick = () => {
+        S.lv++;
+        render();
+        api.send({ kind: 'lv', v: S.lv });
+      };
     }
 
     /* ---------- truth or dare ---------- */
@@ -824,8 +1223,15 @@ Games.intimate = {
               S.mode = d.mode;
               S.snap = null;
               if (d.mode === 'tod' && !S.tod) S.tod = { turn: 0, showing: null, passes: { me: 0, them: 0 } };
+              if (d.mode === 'levels') S.lv = 0;
               render();
             }
+            break;
+          case 'spin':
+            if (S.phase === 'play' && S.mode === 'wheel') wheelSpinTo(d.i);
+            break;
+          case 'lv':
+            if (S.phase === 'play' && S.mode === 'levels') { S.lv = d.v; render(); }
             break;
           case 'apart':
             if (S.phase === 'play') {

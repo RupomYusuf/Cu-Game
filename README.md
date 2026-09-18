@@ -8,12 +8,15 @@ accounts, no server to run, everything stays in the browser.
 
 | Game | What it is |
 |------|------------|
-| 💌 Question Cards | Warm-up, deep-dive and playful conversation decks — take turns answering |
-| 💋 Intimate 🔞 | 18+ section with two consent-gated levels (Intimate / Extremely Intimate), each with real games: **Love Dice**, **Truth or Dare**, **60-Second Challenge** and a card deck. Starts only after both partners consent, everything is skippable |
 | ⭕ Tic-Tac-Toe | The classic, with a running score |
 | 🔴 Connect Four | Drop discs, first to connect four wins |
-| 🤔 Who's More Likely? | Both guess who fits the prompt — match answers to score "in sync" points |
-| 🎨 Draw & Guess | Pictionary with live drawing sync, chat, role swapping and a 60+ word list |
+| 💌 Question Cards | Warm-up, deep-dive and playful conversation decks — take turns answering |
+| 🤔 Who's More Likely? | Both guess who fits the prompt — match answers to score in-sync points |
+| 💘 This or That | Pick secretly between two options — do you match? |
+| 🙈 Never Have I Ever | Confessions with a playful reveal |
+| 🕵️ Two Truths & a Lie | Write two truths and a lie — can your partner spot the fake? |
+| 🎨 Draw & Guess | Pictionary with live drawing sync, chat and role swapping |
+| 💋 Intimate 🔞 | 18+ zone with two consent-gated levels (Intimate 💋 / Extremely Intimate 🔥), each with Snaps 📷, Love Dice 🎲, Truth or Dare 🎯, 60-Second Challenge ⏱️, Spin the Wheel / Wheel of Fire 🎡, Level Up 🏆 (extreme) and a card deck. Synced Playing-apart 📱 / Together 🏠 mode filters challenges to what you can actually do on camera. Both partners must consent; everything skippable |
 
 ## How to run
 
