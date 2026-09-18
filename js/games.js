@@ -959,38 +959,89 @@ Games.intimate = {
     }
 
     /* ---------- snaps ---------- */
+    function customKey() { return 'cgn-custom-snaps-' + S.level; }
+    function getCustomSnaps() {
+      try { return JSON.parse(localStorage.getItem(customKey()) || '[]'); } catch (e) { return []; }
+    }
+    function saveCustomSnaps(list) {
+      try { localStorage.setItem(customKey(), JSON.stringify(list)); } catch (e) {}
+    }
+    function snapPool() { return L[S.level].snaps.concat(getCustomSnaps()); }
+
     function renderSnaps() {
       const cfg = L[S.level];
       if (S.snap === null) {
+        const custom = getCustomSnaps();
         panel.innerHTML = `
           <h3 class="likely-question" style="font-size:1.7rem">Snaps 📷</h3>
           <p class="game-prompt">One of you draws a snap challenge, takes the photo on your phone and sends it privately. The game never sees or stores your snaps 🔒</p>
           <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
             <button class="btn btn-primary btn-big" id="snap-get">Get a snap challenge 📸</button>
             ${backBtn().outerHTML.replace('<button', '<button id="snap-back"')}
+          </div>
+          <div style="margin-top:22px;text-align:left;max-width:440px;margin-left:auto;margin-right:auto;border-top:1px solid var(--rose-light);padding-top:14px">
+            <p class="muted" style="font-size:.85rem;margin-bottom:8px">✍️ <b>Your private challenges</b> — write your own. Stored only on this device, never uploaded:</p>
+            <div id="snap-custom-list">${custom.length ? '' : '<p class="muted" style="font-size:.8rem">Nothing yet — anything you add gets mixed into the draw.</p>'}</div>
+            <div class="chat-input-row" style="margin-top:8px">
+              <input type="text" id="snap-custom-in" maxlength="120" placeholder="Add your own challenge…">
+              <button class="btn btn-primary" id="snap-custom-add">➕</button>
+            </div>
           </div>`;
         panel.querySelector('#snap-back').onclick = () => toMode('menu');
         panel.querySelector('#snap-get').onclick = () => {
-          S.snap = rnd(cfg.snaps);
+          const pool = snapPool();
+          S.snap = rnd(pool);
+          S.snapText = pool[S.snap];
           S.snapWho = api.myName;
           render();
-          api.send({ kind: 'snap', i: S.snap, who: S.snapWho });
+          api.send({ kind: 'snap', i: S.snap, who: S.snapWho, txt: S.snapText });
         };
+        const customList = panel.querySelector('#snap-custom-list');
+        custom.forEach((t, i) => {
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:8px;margin:4px 0;font-size:.9rem';
+          row.innerHTML = `<span>🔥 ${esc(t)}</span>`;
+          const del = document.createElement('button');
+          del.className = 'btn btn-ghost btn-small';
+          del.style.cssText = 'color:var(--rose-dark);border-color:var(--rose-light);padding:2px 10px';
+          del.textContent = '✕';
+          del.onclick = () => {
+            const list = getCustomSnaps();
+            list.splice(i, 1);
+            saveCustomSnaps(list);
+            render();
+          };
+          row.appendChild(del);
+          customList.appendChild(row);
+        });
+        const addCustom = () => {
+          const inp = panel.querySelector('#snap-custom-in');
+          const val = inp.value.trim();
+          if (!val) return;
+          const list = getCustomSnaps();
+          list.push(val);
+          saveCustomSnaps(list);
+          render();
+        };
+        panel.querySelector('#snap-custom-add').onclick = addCustom;
+        panel.querySelector('#snap-custom-in').addEventListener('keydown', e => { if (e.key === 'Enter') addCustom(); });
       } else {
         panel.innerHTML = `
           <h3 class="likely-question" style="font-size:1.7rem">Snaps 📷</h3>
           <div class="card-tag">📸 for ${esc(S.snapWho || api.myName)}</div>
-          <div class="big-card-question">${esc(cfg.snaps[S.snap])}</div>
+          <div class="big-card-question">${esc(S.snapText || '')}</div>
           <p class="muted" style="font-size:.85rem">Take it, send it privately, make their day 😏</p>
           <div style="margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
             <button class="btn btn-primary" id="snap-new">Another one 🔄</button>
             <button class="btn btn-ghost" style="color:var(--rose-dark);border-color:var(--rose-light)" id="snap-back2">◀ All games</button>
           </div>`;
         panel.querySelector('#snap-new').onclick = () => {
-          S.snap = rnd(cfg.snaps);
+          const pool = snapPool();
+          S.snap = rnd(pool);
+          S.snapText = pool[S.snap];
           S.snapWho = api.myName;
           render();
-          api.send({ kind: 'snap', i: S.snap, who: S.snapWho });
+          api.send({ kind: 'snap', i: S.snap, who: S.snapWho, txt: S.snapText });
         };
         panel.querySelector('#snap-back2').onclick = () => { S.snap = null; toMode('menu'); };
       }
@@ -1243,6 +1294,7 @@ Games.intimate = {
           case 'snap':
             if (S.phase === 'play' && S.mode === 'snaps') {
               S.snap = d.i;
+              S.snapText = d.txt || (L[S.level].snaps[d.i]);
               S.snapWho = d.who;
               render();
             }
