@@ -440,27 +440,36 @@ Games.likely = {
  * 6. Intimate (18+ — requires consent from BOTH partners)
  * ===================================================== */
 Games.intimate = {
-  name: 'Intimate 🔞', icon: '💋', desc: 'Just for you two · 18+',
+  name: 'Intimate 🔞', icon: '💋', desc: 'Real games · 18+ · you two only',
   init(root, api) {
-    const LEVELS = DATA.intimate;
+    const L = DATA.intimate;
     const S = {
       phase: 'select', // select | waiting | consent | play
       level: null,     // 'soft' | 'extreme'
-      pending: null,   // level awaiting consent
+      pending: null,
+      mode: 'menu',    // menu | cards | dice | tod | timer
       idx: 0,
+      tod: null,       // { turn, showing:{type,text}|null, passes:{me,them} }
+      timer: null,     // { end, iv, dare }
     };
 
     root.innerHTML = `<div class="game-panel" id="in-panel"></div>`;
     const panel = root.querySelector('#in-panel');
 
-    const label = lvl => LEVELS[lvl] ? LEVELS[lvl].name : lvl;
+    const label = lvl => L[lvl] ? L[lvl].name : lvl;
+    const rnd = arr => Math.floor(Math.random() * arr.length);
+    const onMyTurn = () => (S.tod.turn === 0) === api.isHost;
+
+    function stopTimer() {
+      if (S.timer) { clearInterval(S.timer.iv); S.timer = null; }
+    }
 
     function render() {
       panel.innerHTML = '';
       if (S.phase === 'select') {
         panel.innerHTML = `
           <h3 class="likely-question" style="font-size:1.7rem">Just for the two of you…</h3>
-          <p class="game-prompt">🔞 18+ · Only play what you both want — every card can always be skipped.</p>
+          <p class="game-prompt">🔞 18+ · Only play what you both want — everything can always be skipped.</p>
           <div class="likely-buttons" style="margin-top:18px">
             <button class="likely-btn" data-lvl="soft" style="font-size:1.3rem;padding:26px 10px">💋<br>Intimate</button>
             <button class="likely-btn" data-lvl="extreme" style="font-size:1.3rem;padding:26px 10px">🔥<br>Extremely Intimate</button>
@@ -489,7 +498,7 @@ Games.intimate = {
         panel.innerHTML = `
           <h3 class="likely-question" style="font-size:1.7rem">${esc(label(S.pending))}</h3>
           <p class="game-prompt"><b>${esc(api.partnerName)}</b> wants to play the <b>${esc(label(S.pending))}</b> level. 🔞</p>
-          <p class="game-prompt">Only say yes if you truly want to — “no” is always okay. 💛</p>
+          <p class="game-prompt">Only say yes if you truly want to — "no" is always okay. 💛</p>
           <div class="likely-buttons" style="margin-top:16px">
             <button class="likely-btn match" id="in-yes" style="font-size:1.2rem">Yes 💕</button>
             <button class="likely-btn" id="in-no" style="font-size:1.2rem">Not now</button>
@@ -497,6 +506,9 @@ Games.intimate = {
         panel.querySelector('#in-yes').onclick = () => {
           S.level = S.pending;
           S.idx = 0;
+          S.mode = 'menu';
+          S.tod = null;
+          stopTimer();
           S.phase = 'play';
           render();
           api.send({ kind: 'ok', level: S.level });
@@ -509,34 +521,198 @@ Games.intimate = {
           api.toast('Maybe another time 💛');
         };
       } else if (S.phase === 'play') {
-        const deck = LEVELS[S.level];
-        const card = deck.cards[S.idx % deck.cards.length];
-        const firstIsHost = S.idx % 2 === 0;
-        const asker = firstIsHost === api.isHost ? api.myName : api.partnerName;
+        if (S.mode === 'menu') renderMenu();
+        else if (S.mode === 'cards') renderCards();
+        else if (S.mode === 'dice') renderDice();
+        else if (S.mode === 'tod') renderTod();
+        else if (S.mode === 'timer') renderTimer();
+      }
+    }
+
+    /* ---------- shared: back to game menu ---------- */
+    function toMode(mode, sync = true) {
+      stopTimer();
+      S.mode = mode;
+      if (mode === 'tod' && !S.tod) S.tod = { turn: 0, showing: null, passes: { me: 0, them: 0 } };
+      render();
+      if (sync) api.send({ kind: 'mode', mode });
+    }
+
+    function backBtn() {
+      const b = document.createElement('button');
+      b.className = 'btn btn-ghost';
+      b.style.cssText = 'color:var(--rose-dark);border-color:var(--rose-light)';
+      b.textContent = '◀ All games';
+      b.onclick = () => toMode('menu');
+      return b;
+    }
+
+    /* ---------- game menu ---------- */
+    function renderMenu() {
+      panel.innerHTML = `
+        <h3 class="likely-question" style="font-size:1.7rem">${esc(label(S.level))} — pick a game</h3>
+        <p class="game-prompt">🔞 Everything can be skipped. "Not now" is always okay. 💛</p>
+        <div class="game-grid" style="margin-top:14px">
+          <button class="game-card" data-mode="cards"><span class="gc-icon">💌</span><span class="gc-name">Card deck</span></button>
+          <button class="game-card" data-mode="dice"><span class="gc-icon">🎲</span><span class="gc-name">Love Dice</span></button>
+          <button class="game-card" data-mode="tod"><span class="gc-icon">🎯</span><span class="gc-name">Truth or Dare</span></button>
+          <button class="game-card" data-mode="timer"><span class="gc-icon">⏱️</span><span class="gc-name">60-Second Challenge</span></button>
+        </div>`;
+      panel.querySelectorAll('.game-card').forEach(b => b.onclick = () => toMode(b.dataset.mode));
+    }
+
+    /* ---------- card deck ---------- */
+    function renderCards() {
+      const deck = L[S.level];
+      const card = deck.cards[S.idx % deck.cards.length];
+      const firstIsHost = S.idx % 2 === 0;
+      const asker = firstIsHost === api.isHost ? api.myName : api.partnerName;
+      panel.innerHTML = `
+        <div><span class="card-tag">${esc(deck.name)} · card ${S.idx % deck.cards.length + 1}</span>
+        <span class="card-tag" style="margin-left:6px">💕 ${esc(asker)} goes first</span></div>
+        <div class="big-card-question">${esc(card)}</div>
+        <div style="margin-top:20px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-primary" id="in-next">Next card 💞</button>
+          ${backBtn().outerHTML.replace('<button', '<button id="in-back"')}
+        </div>`;
+      panel.querySelector('#in-next').onclick = () => {
+        S.idx++;
+        render();
+        api.send({ kind: 'next', idx: S.idx });
+      };
+      panel.querySelector('#in-back').onclick = () => toMode('menu');
+    }
+
+    /* ---------- love dice ---------- */
+    function renderDice() {
+      const cfg = L[S.level].dice;
+      panel.innerHTML = `
+        <h3 class="likely-question" style="font-size:1.7rem">Love Dice 🎲</h3>
+        <p class="game-prompt">Roll and do what the dice say — to ${esc(api.partnerName)}… or yourself, your call 😉</p>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:center;margin:10px 0">
+          <div class="draw-word" id="dice-a">?</div>
+          <div class="draw-word" id="dice-t" style="font-size:1.4rem">&nbsp;</div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:10px">
+          <button class="btn btn-primary btn-big" id="dice-roll">Roll 🎲</button>
+          ${backBtn().outerHTML.replace('<button', '<button id="dice-back"')}
+        </div>`;
+      panel.querySelector('#dice-back').onclick = () => toMode('menu');
+      panel.querySelector('#dice-roll').onclick = () => {
+        const a = rnd(cfg.actions), ti = rnd(cfg.targets);
+        animateDice(cfg, a, ti);
+        api.send({ kind: 'dice', a, ti });
+      };
+    }
+
+    function animateDice(cfg, aFinal, tFinal) {
+      const aEl = panel.querySelector('#dice-a'), tEl = panel.querySelector('#dice-t');
+      const rollBtn = panel.querySelector('#dice-roll');
+      if (rollBtn) rollBtn.disabled = true;
+      let n = 0;
+      const iv = setInterval(() => {
+        n++;
+        if (aEl) aEl.textContent = cfg.actions[rnd(cfg.actions)];
+        if (tEl) tEl.textContent = cfg.targets[rnd(cfg.targets)];
+        if (n >= 8) {
+          clearInterval(iv);
+          if (aEl) aEl.textContent = cfg.actions[aFinal];
+          if (tEl) tEl.textContent = '→ ' + cfg.targets[tFinal];
+          if (rollBtn) rollBtn.disabled = false;
+        }
+      }, 90);
+    }
+
+    /* ---------- truth or dare ---------- */
+    function renderTod() {
+      const cfg = L[S.level];
+      const passRule = S.level === 'extreme' ? '<p class="muted" style="font-size:.85rem">Passing = remove one item of clothing 🙈</p>' : '';
+      if (S.tod.showing) {
         panel.innerHTML = `
-          <div class="card-tag">${esc(deck.name)} · card ${S.idx % deck.cards.length + 1}</div>
-          <div id="in-asker" class="card-tag" style="margin-left:6px">💕 ${esc(asker)} goes first</div>
-          <div class="big-card-question">${esc(card)}</div>
+          <div class="card-tag">${S.tod.showing.type === 'truth' ? '💛 Truth' : '🔥 Dare'}</div>
+          <div class="big-card-question">${esc(S.tod.showing.text)}</div>
           <div style="margin-top:20px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-            <button class="btn btn-primary btn-big" id="in-next">Next card 💞</button>
-            <button class="btn btn-ghost" style="color:var(--rose-dark);border-color:var(--rose-light)" id="in-skip">Skip ⏭️</button>
-            <button class="btn btn-ghost" style="color:var(--rose-dark);border-color:var(--rose-light)" id="in-exit">Stop</button>
-          </div>
-          <p class="muted" style="margin-top:14px;font-size:.85rem">Anything can be skipped — no explanations needed.</p>`;
-        const advance = (delta) => {
-          S.idx = Math.max(0, S.idx + delta);
+            <button class="btn btn-primary" id="tod-done">Done ✓</button>
+            <button class="btn btn-ghost" style="color:var(--rose-dark);border-color:var(--rose-light)" id="tod-pass">Pass</button>
+          </div>${passRule}`;
+        panel.querySelector('#tod-done').onclick = () => {
+          S.tod.showing = null;
+          S.tod.turn ^= 1;
           render();
-          api.send({ kind: 'next', idx: S.idx });
+          api.send({ kind: 'tod-done' });
         };
-        panel.querySelector('#in-next').onclick = () => advance(1);
-        panel.querySelector('#in-skip').onclick = () => advance(1);
-        panel.querySelector('#in-exit').onclick = () => {
-          api.send({ kind: 'exit' });
-          S.level = null;
-          S.pending = null;
-          S.idx = 0;
-          S.phase = 'select';
+        panel.querySelector('#tod-pass').onclick = () => {
+          S.tod.showing = null;
+          S.tod.passes.me++;
+          S.tod.turn ^= 1;
           render();
+          api.send({ kind: 'tod-pass' });
+        };
+      } else {
+        const mine = onMyTurn();
+        const passCount = S.tod.passes.me + S.tod.passes.them;
+        panel.innerHTML = `
+          <h3 class="likely-question" style="font-size:1.7rem">Truth or Dare 🎯</h3>
+          <p class="game-prompt">${mine
+            ? `Your turn, ${esc(api.myName)} — what'll it be?`
+            : `Waiting for ${esc(api.partnerName)} to choose…`}</p>
+          ${passCount ? `<p class="muted" style="font-size:.85rem">Passes so far: ${passCount}</p>` : passRule}
+          <div class="likely-buttons" style="margin-top:16px">
+            <button class="likely-btn" id="tod-truth" ${mine ? '' : 'disabled'} style="font-size:1.2rem">💛<br>Truth</button>
+            <button class="likely-btn" id="tod-dare" ${mine ? '' : 'disabled'} style="font-size:1.2rem">🔥<br>Dare</button>
+          </div>
+          <div style="margin-top:18px">${backBtn().outerHTML.replace('<button', '<button id="tod-back"')}</div>`;
+        panel.querySelector('#tod-back').onclick = () => toMode('menu');
+        if (mine) {
+          const pick = type => {
+            const list = type === 'truth' ? cfg.truths : cfg.dares;
+            const i = rnd(list);
+            S.tod.showing = { type, text: list[i] };
+            render();
+            api.send({ kind: 'tod', type, i });
+          };
+          panel.querySelector('#tod-truth').onclick = () => pick('truth');
+          panel.querySelector('#tod-dare').onclick = () => pick('dare');
+        }
+      }
+    }
+
+    /* ---------- 60-second challenge ---------- */
+    function renderTimer() {
+      const cfg = L[S.level];
+      if (S.timer) {
+        panel.innerHTML = `
+          <h3 class="likely-question" style="font-size:1.7rem">60-Second Challenge ⏱️</h3>
+          <div class="big-card-question" style="min-height:60px">${esc(S.timer.dare)}</div>
+          <div class="draw-word" id="timer-count" style="font-size:3rem">60</div>
+          <div style="margin-top:10px">${backBtn().outerHTML.replace('<button', '<button id="timer-back"')}</div>`;
+        panel.querySelector('#timer-back').onclick = () => toMode('menu');
+        S.timer.iv = setInterval(() => {
+          const left = Math.max(0, Math.ceil((S.timer.end - Date.now()) / 1000));
+          const el = panel.querySelector('#timer-count');
+          if (el) el.textContent = left;
+          if (left <= 0) {
+            stopTimer();
+            panel.innerHTML = `
+              <div class="big-card-question">Time's up! 💋</div>
+              <div style="margin-top:14px">${backBtn().outerHTML.replace('<button', '<button id="timer-back2"')}</div>`;
+            panel.querySelector('#timer-back2').onclick = () => toMode('menu');
+          }
+        }, 250);
+      } else {
+        panel.innerHTML = `
+          <h3 class="likely-question" style="font-size:1.7rem">60-Second Challenge ⏱️</h3>
+          <p class="game-prompt">One dare, sixty seconds, zero excuses. Either of you can start it.</p>
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
+            <button class="btn btn-primary btn-big" id="timer-start">Start 💋</button>
+            ${backBtn().outerHTML.replace('<button', '<button id="timer-back3"')}
+          </div>`;
+        panel.querySelector('#timer-back3').onclick = () => toMode('menu');
+        panel.querySelector('#timer-start').onclick = () => {
+          const i = rnd(cfg.dares);
+          S.timer = { end: Date.now() + 60000, dare: cfg.dares[i], iv: null };
+          render();
+          api.send({ kind: 'timer', i });
         };
       }
     }
@@ -554,18 +730,23 @@ Games.intimate = {
             if (S.phase === 'waiting' && d.level === S.pending) {
               S.level = d.level;
               S.idx = 0;
+              S.mode = 'menu';
+              S.tod = null;
+              stopTimer();
               S.phase = 'play';
               render();
               api.toast(`${label(d.level)} — enjoy 💞`);
             }
             break;
           case 'no':
+            stopTimer();
             S.phase = 'select';
             S.pending = null;
             render();
-            if (S.phase) api.toast('Maybe another time 💛');
+            api.toast('Maybe another time 💛');
             break;
           case 'exit':
+            stopTimer();
             S.level = null;
             S.pending = null;
             S.idx = 0;
@@ -573,11 +754,41 @@ Games.intimate = {
             render();
             break;
           case 'next':
-            if (S.phase === 'play') { S.idx = d.idx; render(); }
+            if (S.phase === 'play' && S.mode === 'cards') { S.idx = d.idx; render(); }
+            break;
+          case 'mode':
+            if (S.phase === 'play') {
+              stopTimer();
+              S.mode = d.mode;
+              if (d.mode === 'tod' && !S.tod) S.tod = { turn: 0, showing: null, passes: { me: 0, them: 0 } };
+              render();
+            }
+            break;
+          case 'dice':
+            if (S.phase === 'play' && S.mode === 'dice') animateDice(L[S.level].dice, d.a, d.ti);
+            break;
+          case 'tod':
+            if (S.phase === 'play' && S.mode === 'tod' && S.tod) {
+              const list = d.type === 'truth' ? L[S.level].truths : L[S.level].dares;
+              S.tod.showing = { type: d.type, text: list[d.i] };
+              render();
+            }
+            break;
+          case 'tod-done':
+            if (S.tod) { S.tod.showing = null; S.tod.turn ^= 1; if (S.mode === 'tod') render(); }
+            break;
+          case 'tod-pass':
+            if (S.tod) { S.tod.showing = null; S.tod.passes.them++; S.tod.turn ^= 1; if (S.mode === 'tod') render(); }
+            break;
+          case 'timer':
+            if (S.phase === 'play' && S.mode === 'timer') {
+              S.timer = { end: Date.now() + 60000, dare: L[S.level].dares[d.i], iv: null };
+              render();
+            }
             break;
         }
       },
-      destroy() {}
+      destroy() { stopTimer(); }
     };
   }
 };
@@ -651,7 +862,7 @@ Games.draw = {
 
     function giveUp() {
       api.send({ kind: 'reveal', word: S.word });
-      sysMsg(`Nobody got it — the word was “${S.word}”`);
+      sysMsg(`Nobody got it — the word was "${S.word}"`);
       setTimeout(endRound, 1500);
     }
 
@@ -827,7 +1038,7 @@ Games.draw = {
               api.send({ kind: 'correct' });
               S.scores.them++;
               renderScore();
-              resultEl.innerHTML = `<div class="result-banner lose">${esc(api.partnerName)} guessed it! The word was “${esc(S.word)}” 💡</div>`;
+              resultEl.innerHTML = `<div class="result-banner lose">${esc(api.partnerName)} guessed it! The word was "${esc(S.word)}" 💡</div>`;
               sysMsg(`${api.partnerName} guessed it! 🎉`);
               setTimeout(endRound, 2500);
             }
@@ -843,7 +1054,7 @@ Games.draw = {
           break;
         }
         case 'reveal': {
-          sysMsg(`Nobody got it — the word was “${d.word}”`);
+          sysMsg(`Nobody got it — the word was "${d.word}"`);
           break;
         }
         case 'newword': {

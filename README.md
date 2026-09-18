@@ -9,7 +9,7 @@ accounts, no server to run, everything stays in the browser.
 | Game | What it is |
 |------|------------|
 | 💌 Question Cards | Warm-up, deep-dive and playful conversation decks — take turns answering |
-| 💋 Intimate 🔞 | 18+ section with two levels — Intimate and Extremely Intimate. **Starts only after both partners consent**, and every card can be skipped |
+| 💋 Intimate 🔞 | 18+ section with two consent-gated levels (Intimate / Extremely Intimate), each with real games: **Love Dice**, **Truth or Dare**, **60-Second Challenge** and a card deck. Starts only after both partners consent, everything is skippable |
 | ⭕ Tic-Tac-Toe | The classic, with a running score |
 | 🔴 Connect Four | Drop discs, first to connect four wins |
 | 🤔 Who's More Likely? | Both guess who fits the prompt — match answers to score "in sync" points |
