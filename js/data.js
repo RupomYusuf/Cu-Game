@@ -64,6 +64,37 @@ DATA.decks = {
       "Dare: slow dance with me to one full chorus. Right now.",
       "Truth: what would our rom-com movie be called?",
     ]
+  },
+  intimate: {
+    name: 'Intimate 🔥',
+    cards: [
+      "What's your favorite memory of us being close?",
+      "Describe your idea of a perfect night alone with me.",
+      "What do you think about when we kiss?",
+      "Rate our last kiss out of 10 — and tell me what would make it an 11.",
+      "What's the most attractive thing I do without realizing it?",
+      "Where do you love being touched the most? Show me.",
+      "Truth: when did you last think about me in a not-so-innocent way?",
+      "Dare: give me a 30-second kiss. No talking allowed.",
+      "Dare: slow dance with me in the dark to one whole song.",
+      "What's something new you'd love for us to try together?",
+      "Pick a spot and give me a 5-minute massage. No skipping.",
+      "What compliment about my body do you think I need to hear more often?",
+      "Lights on or off — and why?",
+      "What's something you've wanted to whisper to me but never have?",
+      "Dare: trail three kisses wherever you like.",
+      "What does seduction look like, from you to me?",
+      "Truth: what's your favorite part of being close with me?",
+      "If tonight were our last night together for a whole month, how would we spend it?",
+      "What sound, scent or sight of mine puts you in the mood?",
+      "Truth: tell me about a moment under the covers with me you replay in your head.",
+      "Dare: kiss me like it's the first time, all over again.",
+      "What could I do tomorrow to make you feel truly desired?",
+      "What's the sexiest thing about our relationship that has nothing to do with looks?",
+      "Truth: what outfit of mine is your weakness?",
+      "Dare: give me a compliment that would make me blush, then prove you meant it.",
+      "What's one way we could make our intimate life feel more special?",
+    ]
   }
 };
 

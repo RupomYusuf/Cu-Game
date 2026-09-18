@@ -8,7 +8,7 @@ accounts, no server to run, everything stays in the browser.
 
 | Game | What it is |
 |------|------------|
-| 💌 Question Cards | Warm-up, deep-dive and playful conversation decks — take turns answering |
+| 💌 Question Cards | Warm-up, deep-dive, playful **and intimate 🔥** decks — take turns answering |
 | ⭕ Tic-Tac-Toe | The classic, with a running score |
 | 🔴 Connect Four | Drop discs, first to connect four wins |
 | 🤔 Who's More Likely? | Both guess who fits the prompt — match answers to score "in sync" points |
@@ -52,8 +52,9 @@ It's fully static — host it anywhere:
 
 ## Adding your own content
 
-- Conversation decks, "Who's more likely" prompts and drawing words live in
-  `js/data.js` — edit freely.
+- Conversation decks (including the 🔥 Intimate deck, gated behind a consent
+  prompt), "Who's more likely" prompts and drawing words live in `js/data.js`
+  — edit freely.
 - Each game in `js/games.js` is a self-contained module
   (`init(root, api) → { onMsg, destroy }`) — a good template for new games.
 

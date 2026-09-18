@@ -285,10 +285,21 @@ Games.cards = {
     }
 
     deckSel.onchange = () => {
-      S.deck = deckSel.value;
+      const next = deckSel.value;
+      if (next === 'intimate' && S.deck !== 'intimate') {
+        const ok = window.confirm(
+          'The Intimate deck 🔥 is for adult couples.\n\n' +
+          'Make sure you are both comfortable playing it — ' +
+          'anything on a card can always be skipped!\n\n' +
+          'Enable this deck?'
+        );
+        if (!ok) { deckSel.value = S.deck; return; }
+      }
+      S.deck = next;
       S.idx = 0;
       show();
       api.send({ kind: 'deck', deck: S.deck });
+      if (next === 'intimate') api.toast('Intimate deck enabled 🔥');
     };
 
     root.querySelector('#cards-next').onclick = () => {
