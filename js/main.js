@@ -1,5 +1,5 @@
 /* ============ App shell: lobby, menu, game lifecycle ============ */
-const APP_VERSION = '5'; // bump together with the ?v= in index.html
+const APP_VERSION = '6'; // bump together with the ?v= in index.html
 
 const App = (() => {
   const $ = sel => document.querySelector(sel);
@@ -97,21 +97,31 @@ const App = (() => {
   }
 
   /* ---------- menu ---------- */
+  function makeGameCard(id, g) {
+    const b = document.createElement('button');
+    b.className = 'game-card';
+    b.innerHTML = `<span class="gc-icon">${g.icon}</span><span class="gc-name">${g.name}</span><span class="gc-desc">${g.desc}</span>`;
+    b.onclick = () => {
+      App.send({ t: 'game', g: id });
+      startGame(id);
+    };
+    return b;
+  }
+
   function enterMenu() {
     $('#menu-me').textContent = myName;
     $('#menu-partner').textContent = partnerName;
     const grid = $('#game-grid');
     grid.innerHTML = '';
-    Object.entries(Games).forEach(([id, g]) => {
-      const b = document.createElement('button');
-      b.className = 'game-card';
-      b.innerHTML = `<span class="gc-icon">${g.icon}</span><span class="gc-name">${g.name}</span><span class="gc-desc">${g.desc}</span>`;
-      b.onclick = () => {
-        App.send({ t: 'game', g: id });
-        startGame(id);
-      };
-      grid.appendChild(b);
-    });
+    Object.entries(Games).filter(([id]) => id !== 'intimate')
+      .forEach(([id, g]) => grid.appendChild(makeGameCard(id, g)));
+
+    // separate consent-gated 18+ zone below the regular games
+    const zone = $('#intimate-zone');
+    zone.style.display = 'block';
+    const igrid = $('#intimate-grid');
+    igrid.innerHTML = '';
+    igrid.appendChild(makeGameCard('intimate', Games.intimate));
     show('menu');
   }
 

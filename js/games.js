@@ -447,8 +447,10 @@ Games.intimate = {
       phase: 'select', // select | waiting | consent | play
       level: null,     // 'soft' | 'extreme'
       pending: null,
-      mode: 'menu',    // menu | cards | dice | tod | timer
+      mode: 'menu',    // menu | cards | dice | tod | timer | snaps
       idx: 0,
+      apart: true,     // playing from two different places (camera/snaps only)
+      snap: null,      // index of the current snap challenge
       tod: null,       // { turn, showing:{type,text}|null, passes:{me,them} }
       timer: null,     // { end, iv, dare }
     };
@@ -524,6 +526,7 @@ Games.intimate = {
         if (S.mode === 'menu') renderMenu();
         else if (S.mode === 'cards') renderCards();
         else if (S.mode === 'dice') renderDice();
+        else if (S.mode === 'snaps') renderSnaps();
         else if (S.mode === 'tod') renderTod();
         else if (S.mode === 'timer') renderTimer();
       }
@@ -533,6 +536,7 @@ Games.intimate = {
     function toMode(mode, sync = true) {
       stopTimer();
       S.mode = mode;
+      S.snap = null;
       if (mode === 'tod' && !S.tod) S.tod = { turn: 0, showing: null, passes: { me: 0, them: 0 } };
       render();
       if (sync) api.send({ kind: 'mode', mode });
@@ -553,22 +557,35 @@ Games.intimate = {
         <h3 class="likely-question" style="font-size:1.7rem">${esc(label(S.level))} — pick a game</h3>
         <p class="game-prompt">🔞 Everything can be skipped. "Not now" is always okay. 💛</p>
         <div class="game-grid" style="margin-top:14px">
+          <button class="game-card" data-mode="snaps"><span class="gc-icon">📷</span><span class="gc-name">Snaps</span></button>
           <button class="game-card" data-mode="cards"><span class="gc-icon">💌</span><span class="gc-name">Card deck</span></button>
           <button class="game-card" data-mode="dice"><span class="gc-icon">🎲</span><span class="gc-name">Love Dice</span></button>
           <button class="game-card" data-mode="tod"><span class="gc-icon">🎯</span><span class="gc-name">Truth or Dare</span></button>
           <button class="game-card" data-mode="timer"><span class="gc-icon">⏱️</span><span class="gc-name">60-Second Challenge</span></button>
-        </div>`;
+        </div>
+        <div style="margin-top:16px">
+          <button class="btn btn-ghost" style="color:var(--rose-dark);border-color:var(--rose-light)" id="in-apart">${S.apart ? '📱 Playing apart' : '🏠 Playing together'}</button>
+        </div>
+        <p class="muted" style="margin-top:10px;font-size:.8rem">${S.apart
+          ? 'Apart mode: only challenges you can do on camera or with snaps.'
+          : 'Together mode: includes challenges that need you in the same room.'}</p>`;
       panel.querySelectorAll('.game-card').forEach(b => b.onclick = () => toMode(b.dataset.mode));
+      panel.querySelector('#in-apart').onclick = () => {
+        S.apart = !S.apart;
+        render();
+        api.send({ kind: 'apart', v: S.apart });
+      };
     }
 
     /* ---------- card deck ---------- */
     function renderCards() {
       const deck = L[S.level];
-      const card = deck.cards[S.idx % deck.cards.length];
+      const list = deck.cards.filter(c => !S.apart || !c.startsWith('🏠'));
+      const card = list[S.idx % list.length];
       const firstIsHost = S.idx % 2 === 0;
       const asker = firstIsHost === api.isHost ? api.myName : api.partnerName;
       panel.innerHTML = `
-        <div><span class="card-tag">${esc(deck.name)} · card ${S.idx % deck.cards.length + 1}</span>
+        <div><span class="card-tag">${esc(deck.name)} · card ${S.idx % list.length + 1}</span>
         <span class="card-tag" style="margin-left:6px">💕 ${esc(asker)} goes first</span></div>
         <div class="big-card-question">${esc(card)}</div>
         <div style="margin-top:20px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
@@ -599,7 +616,7 @@ Games.intimate = {
         </div>`;
       panel.querySelector('#dice-back').onclick = () => toMode('menu');
       panel.querySelector('#dice-roll').onclick = () => {
-        const a = rnd(cfg.actions), ti = rnd(cfg.targets);
+        const a = rnd(cfg.whats), ti = rnd(cfg.hows);
         animateDice(cfg, a, ti);
         api.send({ kind: 'dice', a, ti });
       };
@@ -612,15 +629,59 @@ Games.intimate = {
       let n = 0;
       const iv = setInterval(() => {
         n++;
-        if (aEl) aEl.textContent = cfg.actions[rnd(cfg.actions)];
-        if (tEl) tEl.textContent = cfg.targets[rnd(cfg.targets)];
+        if (aEl) aEl.textContent = cfg.whats[rnd(cfg.whats)];
+        if (tEl) tEl.textContent = '— ' + cfg.hows[rnd(cfg.hows)];
         if (n >= 8) {
           clearInterval(iv);
-          if (aEl) aEl.textContent = cfg.actions[aFinal];
-          if (tEl) tEl.textContent = '→ ' + cfg.targets[tFinal];
+          if (aEl) aEl.textContent = cfg.whats[aFinal];
+          if (tEl) tEl.textContent = '— ' + cfg.hows[tFinal];
           if (rollBtn) rollBtn.disabled = false;
         }
       }, 90);
+    }
+
+    /* dare pool depends on apart/together mode */
+    function darePool() {
+      const cfg = L[S.level];
+      return S.apart ? cfg.daresApart : cfg.daresTogether;
+    }
+
+    /* ---------- snaps ---------- */
+    function renderSnaps() {
+      const cfg = L[S.level];
+      if (S.snap === null) {
+        panel.innerHTML = `
+          <h3 class="likely-question" style="font-size:1.7rem">Snaps 📷</h3>
+          <p class="game-prompt">One of you draws a snap challenge, takes the photo on your phone and sends it privately. The game never sees or stores your snaps 🔒</p>
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
+            <button class="btn btn-primary btn-big" id="snap-get">Get a snap challenge 📸</button>
+            ${backBtn().outerHTML.replace('<button', '<button id="snap-back"')}
+          </div>`;
+        panel.querySelector('#snap-back').onclick = () => toMode('menu');
+        panel.querySelector('#snap-get').onclick = () => {
+          S.snap = rnd(cfg.snaps);
+          S.snapWho = api.myName;
+          render();
+          api.send({ kind: 'snap', i: S.snap, who: S.snapWho });
+        };
+      } else {
+        panel.innerHTML = `
+          <h3 class="likely-question" style="font-size:1.7rem">Snaps 📷</h3>
+          <div class="card-tag">📸 for ${esc(S.snapWho || api.myName)}</div>
+          <div class="big-card-question">${esc(cfg.snaps[S.snap])}</div>
+          <p class="muted" style="font-size:.85rem">Take it, send it privately, make their day 😏</p>
+          <div style="margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+            <button class="btn btn-primary" id="snap-new">Another one 🔄</button>
+            <button class="btn btn-ghost" style="color:var(--rose-dark);border-color:var(--rose-light)" id="snap-back2">◀ All games</button>
+          </div>`;
+        panel.querySelector('#snap-new').onclick = () => {
+          S.snap = rnd(cfg.snaps);
+          S.snapWho = api.myName;
+          render();
+          api.send({ kind: 'snap', i: S.snap, who: S.snapWho });
+        };
+        panel.querySelector('#snap-back2').onclick = () => { S.snap = null; toMode('menu'); };
+      }
     }
 
     /* ---------- truth or dare ---------- */
@@ -665,7 +726,7 @@ Games.intimate = {
         panel.querySelector('#tod-back').onclick = () => toMode('menu');
         if (mine) {
           const pick = type => {
-            const list = type === 'truth' ? cfg.truths : cfg.dares;
+            const list = type === 'truth' ? cfg.truths : darePool();
             const i = rnd(list);
             S.tod.showing = { type, text: list[i] };
             render();
@@ -709,8 +770,9 @@ Games.intimate = {
           </div>`;
         panel.querySelector('#timer-back3').onclick = () => toMode('menu');
         panel.querySelector('#timer-start').onclick = () => {
-          const i = rnd(cfg.dares);
-          S.timer = { end: Date.now() + 60000, dare: cfg.dares[i], iv: null };
+          const pool = darePool();
+          const i = rnd(pool);
+          S.timer = { end: Date.now() + 60000, dare: pool[i], iv: null };
           render();
           api.send({ kind: 'timer', i });
         };
@@ -760,7 +822,22 @@ Games.intimate = {
             if (S.phase === 'play') {
               stopTimer();
               S.mode = d.mode;
+              S.snap = null;
               if (d.mode === 'tod' && !S.tod) S.tod = { turn: 0, showing: null, passes: { me: 0, them: 0 } };
+              render();
+            }
+            break;
+          case 'apart':
+            if (S.phase === 'play') {
+              S.apart = d.v;
+              if (S.mode === 'menu') render();
+              api.toast(S.apart ? '📱 Playing apart' : '🏠 Playing together');
+            }
+            break;
+          case 'snap':
+            if (S.phase === 'play' && S.mode === 'snaps') {
+              S.snap = d.i;
+              S.snapWho = d.who;
               render();
             }
             break;
@@ -769,7 +846,7 @@ Games.intimate = {
             break;
           case 'tod':
             if (S.phase === 'play' && S.mode === 'tod' && S.tod) {
-              const list = d.type === 'truth' ? L[S.level].truths : L[S.level].dares;
+              const list = d.type === 'truth' ? L[S.level].truths : darePool();
               S.tod.showing = { type: d.type, text: list[d.i] };
               render();
             }
@@ -782,7 +859,8 @@ Games.intimate = {
             break;
           case 'timer':
             if (S.phase === 'play' && S.mode === 'timer') {
-              S.timer = { end: Date.now() + 60000, dare: L[S.level].dares[d.i], iv: null };
+              const pool = darePool();
+              S.timer = { end: Date.now() + 60000, dare: pool[d.i], iv: null };
               render();
             }
             break;

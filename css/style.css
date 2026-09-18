@@ -147,6 +147,22 @@ input[type="text"]:focus { border-color: var(--rose); }
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 14px;
 }
+
+/* separate 18+ zone on the menu */
+.intimate-zone { margin-top: 30px; }
+.zone-divider {
+  font-family: 'Caveat', cursive;
+  font-size: 1.7rem;
+  color: #ffb3c6;
+  text-align: center;
+  margin-bottom: 12px;
+}
+.intimate-grid .game-card {
+  background: linear-gradient(160deg, #4a1230, #6d214f);
+  border: 1px solid rgba(255, 158, 187, .55);
+}
+.intimate-grid .gc-name { color: #ff9ebb; }
+.intimate-grid .gc-desc { color: #d998ad; }
 .game-card {
   background: var(--card-bg);
   border: none;

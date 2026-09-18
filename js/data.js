@@ -67,13 +67,15 @@ DATA.decks = {
   }
 };
 
-/* --- Intimate section (18+, consent-gated) --- */
+/* --- Intimate section (18+, consent-gated) ---
+ * daresApart = doable over a video call; daresTogether = need to be in the
+ * same room. Cards tagged 🏠 only appear when playing together. */
 DATA.intimate = {
   soft: {
     name: 'Intimate 💋',
     dice: {
-      actions: ['Kiss', 'Massage', 'Touch softly', 'Tease', 'Whisper something sweet and naughty about', 'Nibble gently'],
-      targets: ['lips', 'neck', 'earlobe', 'hand', 'lower back', 'shoulder', 'cheek', 'inner wrist'],
+      whats: ['Blow a kiss', 'Wink slowly', 'Bite your lip', 'Trace your lips on the camera', 'Hug yourself where you want my arms', "Say 'I want you' in a whisper", 'Blow a kiss to the camera and smile', 'Run your fingers through your hair'],
+      hows: ['slowly', "like it's our last", 'with a smile', 'with your eyes closed', 'in slow motion', 'twice', 'without breaking eye contact', 'like you mean it'],
     },
     truths: [
       "When did you last think about me in a not-so-innocent way?",
@@ -87,7 +89,19 @@ DATA.intimate = {
       "What could I do tomorrow to make you feel truly desired?",
       "What do you think about when we kiss?",
     ],
-    dares: [
+    daresApart: [
+      "Kiss the camera like it's my lips — 10 slow seconds.",
+      "Whisper into the mic exactly what you'd say in my ear right now.",
+      "Blow a kiss in slow motion. Make me feel it through the screen.",
+      "Trace your lips on the screen where mine are.",
+      "Close your eyes and describe in detail what you'd do if I were there right now.",
+      "Give the camera your best 'come here' look for 15 seconds.",
+      "Tell me three things you'd do to me tonight… save the best for last.",
+      "Say the naughtiest sentence you can think of, then blush for the camera.",
+      "Show me your favorite way to be kissed — demonstrate on your own hand.",
+      "Sing one line of 'our song' in your lowest, softest voice.",
+    ],
+    daresTogether: [
       "Give me a 30-second kiss. No talking allowed.",
       "Pick a spot and give me a 5-minute massage.",
       "Slow dance with me in the dark to one whole song.",
@@ -95,7 +109,24 @@ DATA.intimate = {
       "Kiss me like it's the first time, all over again.",
       "Whisper something sweet in my ear, then kiss my cheek.",
       "Hold me close for two whole minutes. No phones.",
-      "Give me a compliment that would make me blush, then prove you meant it.",
+    ],
+    snaps: [
+      "Blow a kiss to the camera 💌",
+      "Pouty face — make it cute 😚",
+      "Your view right now — show me your world 🌍",
+      "Recreate our favorite photo of us 📸",
+      "Write my name (or 💕) on your hand and snap it ✏️",
+      "Your coziest pajama look 🧸",
+      "Morning face — no filter, just for me ☀️",
+      "The shirt of mine you'd steal tonight 👕",
+      "Snap the screen playing the song that reminds you of me 🎵",
+      "Make the face you make when you think of me 💭",
+      "Hug a pillow like it's me 🤗",
+      "Your best 'hey you' smile 😊",
+      "Draw a little heart somewhere on your skin ✏️",
+      "Selfie by candlelight 🕯️",
+      "The outfit you'd pick for our next date 👗",
+      "A mid-laugh photo — I'll wait 😄",
     ],
     cards: [
       "What's your favorite memory of us being close?",
@@ -105,10 +136,10 @@ DATA.intimate = {
       "What's the most attractive thing I do without realizing it?",
       "Where do you love being touched the most? Show me.",
       "Truth: when did you last think about me in a not-so-innocent way?",
-      "Dare: give me a 30-second kiss. No talking allowed.",
-      "Dare: slow dance with me in the dark to one whole song.",
+      "🏠 Dare: give me a 30-second kiss. No talking allowed.",
+      "🏠 Dare: slow dance with me in the dark to one whole song.",
       "What's something new you'd love for us to try together?",
-      "Pick a spot and give me a 5-minute massage. No skipping.",
+      "🏠 Pick a spot and give me a 5-minute massage. No skipping.",
       "What compliment about my body do you think I need to hear more often?",
       "Lights on or off — and why?",
       "What's something you've wanted to whisper to me but never have?",
@@ -118,7 +149,7 @@ DATA.intimate = {
       "If tonight were our last night together for a whole month, how would we spend it?",
       "What sound, scent or sight of mine puts you in the mood?",
       "Truth: tell me about a moment under the covers with me you replay in your head.",
-      "Dare: kiss me like it's the first time, all over again.",
+      "🏠 Dare: kiss me like it's the first time, all over again.",
       "What could I do tomorrow to make you feel truly desired?",
       "What's the sexiest thing about our relationship that has nothing to do with looks?",
       "Truth: what outfit of mine is your weakness?",
@@ -129,8 +160,8 @@ DATA.intimate = {
   extreme: {
     name: 'Extremely Intimate 🔥',
     dice: {
-      actions: ['Kiss deeply', 'Massage', 'Touch slowly', 'Tease with your lips', 'Whisper your fantasy about', 'Bite playfully', 'Trace slowly with your fingertips', 'Kiss your way down to'],
-      targets: ['lips', 'neck', 'collarbone', 'lower back', 'hips', 'thigh', 'stomach', 'the spot behind my ear'],
+      whats: ['Look into the camera and undress me with your eyes', 'Whisper your favorite fantasy about', 'Bite your lip thinking about', 'Describe how you would kiss', 'Blow a slow, deliberate kiss to', 'Say the naughtiest thing you can imagine about', 'Trace your hands over yourself imagining they are', 'Moan softly, then wink at'],
+      hows: ['slowly', 'without smiling', 'in detail', 'twice', 'with your eyes closed', 'like it is a secret', 'in a whisper', 'and then blush'],
     },
     truths: [
       "Describe exactly what you want me to do to you tonight.",
@@ -146,21 +177,45 @@ DATA.intimate = {
       "Tell me exactly how you want tonight to end.",
       "What part of foreplay do you wish lasted longer?",
     ],
-    dares: [
-      "Take off one item of clothing — my choice which one.",
+    daresApart: [
+      "Slowly take off one item of clothing on camera. Tease the whole way.",
+      "Describe — in detail — what you're wearing to bed tonight… and what you're not.",
+      "Turn off the lights and let me hear what you'd whisper against my neck.",
+      "Give the camera a 15-second stare like you're undressing me.",
+      "Tell me exactly where you want my hands right now. Be specific.",
+      "Kiss the camera the way you'd kiss my neck. Slowly.",
+      "Run your hands slowly down your body while describing what you wish mine were doing.",
+      "Whisper your dirtiest thought about me. Don't hold back.",
+      "Show me your favorite spot to be kissed — trace it on the camera, slowly.",
+      "Moan my name. Just once. Make it count.",
+    ],
+    daresTogether: [
       "I pick where the next three kisses go. No negotiating.",
       "Let me blindfold you for the next five minutes.",
       "Sit skin-to-skin for the rest of this game.",
       "Kiss me slowly for one full minute. Hands allowed anywhere.",
-      "Write me a morning text for tomorrow — the kind that makes me cancel my plans.",
-      "Reenact the most passionate kiss from any movie. Make it convincing.",
-      "For every dare you pass from now on, remove one piece of clothing.",
       "Put my hand exactly where you want it — then tell me why.",
-      "Pick a song and give me a private show. I'll judge with tips.",
       "Trade massages… and let the hands wander wherever they want.",
       "Kiss down from my lips as far as you dare.",
       "Tease me for a full minute — but no kissing on the lips.",
-      "Do your slowest, most dramatic shirt removal. Commit to it.",
+    ],
+    snaps: [
+      "Bedroom eyes. You know the look I mean 😏",
+      "Just-woke-up shot from under the covers 🛏️",
+      "In your sexiest underwear — or less. Only what you're comfortable with 🔥",
+      "Towel-only selfie, fresh from the shower 🚿",
+      "Silhouette snap with the lights off 🌑",
+      "Lipstick kiss mark — on the mirror or your skin 💋",
+      "Bite-your-lip selfie 😮‍💨",
+      "From behind — shoulders up. Let my imagination work 🌙",
+      "Bed sheet over everything but your eyes 👀",
+      "The pose you'd greet me in if I walked in right now 🚪",
+      "Write 'yours tonight' somewhere and snap it ✍️",
+      "Your sexiest smirk — hold it for three seconds 😏",
+      "A snap mid-undress, down to whatever you dare 🖤",
+      "Snap the light in your room in your most romantic filter 🌹",
+      "Kiss the camera with everything you've got 💋",
+      "Surprise me. Your pick — no rules 🔥",
     ],
     cards: [
       "Truth: describe exactly what you want me to do to you tonight.",
@@ -170,11 +225,11 @@ DATA.intimate = {
       "Truth: tell me your favorite thing I do to you in bed.",
       "Dare: slow dance for me to one song… and take something off when the chorus hits.",
       "Truth: where's the riskiest place you'd want to make out with me?",
-      "Dare: let me blindfold you for the next three cards.",
+      "🏠 Dare: let me blindfold you for the next three cards.",
       "Truth: what sound do I make that drives you the craziest?",
-      "Dare: sit skin-to-skin for the rest of this deck. No clothes between us where it counts.",
+      "🏠 Dare: sit skin-to-skin for the rest of this deck. No clothes between us where it counts.",
       "Truth: tell me about the last time we made love — from your point of view.",
-      "Dare: kiss me slowly for one full minute. Hands allowed anywhere.",
+      "🏠 Dare: kiss me slowly for one full minute. Hands allowed anywhere.",
       "Truth: what would you whisper in my ear right now if no one could ever hear?",
       "Dare: write me a morning text for tomorrow — the kind that makes me cancel my plans.",
       "Truth: what's something you've been shy to ask for in bed? Ask now.",
@@ -182,11 +237,11 @@ DATA.intimate = {
       "Truth: rank them — kisses, massages, teasing. What can you never get enough of?",
       "Dare: for every card either of us skips from now on, we each remove one piece of clothing.",
       "Truth: which moment of our intimacy makes you feel closest to me?",
-      "Dare: put my hand exactly where you want it — then tell me why.",
+      "🏠 Dare: put my hand exactly where you want it — then tell me why.",
       "Truth: what do you think about me that you'd normally never say out loud?",
       "Dare: pick a song and give me a private show. I'll judge with tips.",
       "Truth: tell me exactly how you want tonight to end.",
-      "Dare: trade massages… and let the hands wander wherever they want.",
+      "🏠 Dare: trade massages… and let the hands wander wherever they want.",
     ]
   }
 };
