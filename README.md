@@ -72,3 +72,13 @@ js/data.js      cards / prompts / words
 js/games.js     the five games
 js/main.js      lobby logic, menu, message routing
 ```
+
+## Troubleshooting connections
+
+- **"Room not found"** — the host's page must stay open with the screen
+  unlocked (phones suspend the browser when locked, which drops the room).
+  The guest now auto-retries a few times before giving up.
+- Strict mobile networks often can't connect directly — the app already uses
+  free TURN relays (Open Relay) as a fallback, which fixes most of these.
+- Still failing? Both players refresh the page (to get the same version) and
+  try a new room.
