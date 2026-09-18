@@ -64,9 +64,13 @@ DATA.decks = {
       "Dare: slow dance with me to one full chorus. Right now.",
       "Truth: what would our rom-com movie be called?",
     ]
-  },
-  intimate: {
-    name: 'Intimate 🔥',
+  }
+};
+
+/* --- Intimate section (18+, consent-gated) --- */
+DATA.intimate = {
+  soft: {
+    name: 'Intimate 💋',
     cards: [
       "What's your favorite memory of us being close?",
       "Describe your idea of a perfect night alone with me.",
@@ -94,6 +98,35 @@ DATA.decks = {
       "Truth: what outfit of mine is your weakness?",
       "Dare: give me a compliment that would make me blush, then prove you meant it.",
       "What's one way we could make our intimate life feel more special?",
+    ]
+  },
+  extreme: {
+    name: 'Extremely Intimate 🔥',
+    cards: [
+      "Truth: describe exactly what you want me to do to you tonight.",
+      "Dare: take off one item of clothing — my choice which one.",
+      "Truth: what's a fantasy you've never told anyone?",
+      "Dare: I pick where the next three kisses go. No negotiating.",
+      "Truth: tell me your favorite thing I do to you in bed.",
+      "Dare: slow dance for me to one song… and take something off when the chorus hits.",
+      "Truth: where's the riskiest place you'd want to make out with me?",
+      "Dare: let me blindfold you for the next three cards.",
+      "Truth: what sound do I make that drives you the craziest?",
+      "Dare: sit skin-to-skin for the rest of this deck. No clothes between us where it counts.",
+      "Truth: tell me about the last time we made love — from your point of view.",
+      "Dare: kiss me slowly for one full minute. Hands allowed anywhere.",
+      "Truth: what would you whisper in my ear right now if no one could ever hear?",
+      "Dare: write me a morning text for tomorrow — the kind that makes me cancel my plans.",
+      "Truth: what's something you've been shy to ask for in bed? Ask now.",
+      "Dare: reenact the most passionate kiss from any movie. Make it convincing.",
+      "Truth: rank them — kisses, massages, teasing. What can you never get enough of?",
+      "Dare: for every card either of us skips from now on, we each remove one piece of clothing.",
+      "Truth: which moment of our intimacy makes you feel closest to me?",
+      "Dare: put my hand exactly where you want it — then tell me why.",
+      "Truth: what do you think about me that you'd normally never say out loud?",
+      "Dare: pick a song and give me a private show. I'll judge with tips.",
+      "Truth: tell me exactly how you want tonight to end.",
+      "Dare: trade massages… and let the hands wander wherever they want.",
     ]
   }
 };

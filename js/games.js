@@ -285,21 +285,10 @@ Games.cards = {
     }
 
     deckSel.onchange = () => {
-      const next = deckSel.value;
-      if (next === 'intimate' && S.deck !== 'intimate') {
-        const ok = window.confirm(
-          'The Intimate deck 🔥 is for adult couples.\n\n' +
-          'Make sure you are both comfortable playing it — ' +
-          'anything on a card can always be skipped!\n\n' +
-          'Enable this deck?'
-        );
-        if (!ok) { deckSel.value = S.deck; return; }
-      }
-      S.deck = next;
+      S.deck = deckSel.value;
       S.idx = 0;
       show();
       api.send({ kind: 'deck', deck: S.deck });
-      if (next === 'intimate') api.toast('Intimate deck enabled 🔥');
     };
 
     root.querySelector('#cards-next').onclick = () => {
@@ -440,6 +429,152 @@ Games.likely = {
           resultEl.innerHTML = '';
           nextBtn.style.display = 'none';
           render();
+        }
+      },
+      destroy() {}
+    };
+  }
+};
+
+/* =====================================================
+ * 6. Intimate (18+ — requires consent from BOTH partners)
+ * ===================================================== */
+Games.intimate = {
+  name: 'Intimate 🔞', icon: '💋', desc: 'Just for you two · 18+',
+  init(root, api) {
+    const LEVELS = DATA.intimate;
+    const S = {
+      phase: 'select', // select | waiting | consent | play
+      level: null,     // 'soft' | 'extreme'
+      pending: null,   // level awaiting consent
+      idx: 0,
+    };
+
+    root.innerHTML = `<div class="game-panel" id="in-panel"></div>`;
+    const panel = root.querySelector('#in-panel');
+
+    const label = lvl => LEVELS[lvl] ? LEVELS[lvl].name : lvl;
+
+    function render() {
+      panel.innerHTML = '';
+      if (S.phase === 'select') {
+        panel.innerHTML = `
+          <h3 class="likely-question" style="font-size:1.7rem">Just for the two of you…</h3>
+          <p class="game-prompt">🔞 18+ · Only play what you both want — every card can always be skipped.</p>
+          <div class="likely-buttons" style="margin-top:18px">
+            <button class="likely-btn" data-lvl="soft" style="font-size:1.3rem;padding:26px 10px">💋<br>Intimate</button>
+            <button class="likely-btn" data-lvl="extreme" style="font-size:1.3rem;padding:26px 10px">🔥<br>Extremely Intimate</button>
+          </div>
+          <p class="muted" style="margin-top:16px;font-size:.85rem">Pick a level — ${esc(api.partnerName)} will be asked for consent before it starts.</p>`;
+        panel.querySelectorAll('.likely-btn').forEach(b => {
+          b.onclick = () => {
+            S.pending = b.dataset.lvl;
+            S.phase = 'waiting';
+            render();
+            api.send({ kind: 'req', level: S.pending });
+          };
+        });
+      } else if (S.phase === 'waiting') {
+        panel.innerHTML = `
+          <h3 class="likely-question" style="font-size:1.7rem">${esc(label(S.pending))}</h3>
+          <p class="game-prompt">Waiting for ${esc(api.partnerName)} to consent… 💞</p>
+          <button class="btn btn-ghost" style="color:var(--rose-dark);border-color:var(--rose-light)" id="in-cancel">Cancel</button>`;
+        panel.querySelector('#in-cancel').onclick = () => {
+          api.send({ kind: 'no' });
+          S.phase = 'select';
+          S.pending = null;
+          render();
+        };
+      } else if (S.phase === 'consent') {
+        panel.innerHTML = `
+          <h3 class="likely-question" style="font-size:1.7rem">${esc(label(S.pending))}</h3>
+          <p class="game-prompt"><b>${esc(api.partnerName)}</b> wants to play the <b>${esc(label(S.pending))}</b> level. 🔞</p>
+          <p class="game-prompt">Only say yes if you truly want to — “no” is always okay. 💛</p>
+          <div class="likely-buttons" style="margin-top:16px">
+            <button class="likely-btn match" id="in-yes" style="font-size:1.2rem">Yes 💕</button>
+            <button class="likely-btn" id="in-no" style="font-size:1.2rem">Not now</button>
+          </div>`;
+        panel.querySelector('#in-yes').onclick = () => {
+          S.level = S.pending;
+          S.idx = 0;
+          S.phase = 'play';
+          render();
+          api.send({ kind: 'ok', level: S.level });
+        };
+        panel.querySelector('#in-no').onclick = () => {
+          api.send({ kind: 'no' });
+          S.phase = 'select';
+          S.pending = null;
+          render();
+          api.toast('Maybe another time 💛');
+        };
+      } else if (S.phase === 'play') {
+        const deck = LEVELS[S.level];
+        const card = deck.cards[S.idx % deck.cards.length];
+        const firstIsHost = S.idx % 2 === 0;
+        const asker = firstIsHost === api.isHost ? api.myName : api.partnerName;
+        panel.innerHTML = `
+          <div class="card-tag">${esc(deck.name)} · card ${S.idx % deck.cards.length + 1}</div>
+          <div id="in-asker" class="card-tag" style="margin-left:6px">💕 ${esc(asker)} goes first</div>
+          <div class="big-card-question">${esc(card)}</div>
+          <div style="margin-top:20px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+            <button class="btn btn-primary btn-big" id="in-next">Next card 💞</button>
+            <button class="btn btn-ghost" style="color:var(--rose-dark);border-color:var(--rose-light)" id="in-skip">Skip ⏭️</button>
+            <button class="btn btn-ghost" style="color:var(--rose-dark);border-color:var(--rose-light)" id="in-exit">Stop</button>
+          </div>
+          <p class="muted" style="margin-top:14px;font-size:.85rem">Anything can be skipped — no explanations needed.</p>`;
+        const advance = (delta) => {
+          S.idx = Math.max(0, S.idx + delta);
+          render();
+          api.send({ kind: 'next', idx: S.idx });
+        };
+        panel.querySelector('#in-next').onclick = () => advance(1);
+        panel.querySelector('#in-skip').onclick = () => advance(1);
+        panel.querySelector('#in-exit').onclick = () => {
+          api.send({ kind: 'exit' });
+          S.level = null;
+          S.pending = null;
+          S.idx = 0;
+          S.phase = 'select';
+          render();
+        };
+      }
+    }
+
+    render();
+    return {
+      onMsg(d) {
+        switch (d.kind) {
+          case 'req':
+            S.pending = d.level;
+            S.phase = 'consent';
+            render();
+            break;
+          case 'ok':
+            if (S.phase === 'waiting' && d.level === S.pending) {
+              S.level = d.level;
+              S.idx = 0;
+              S.phase = 'play';
+              render();
+              api.toast(`${label(d.level)} — enjoy 💞`);
+            }
+            break;
+          case 'no':
+            S.phase = 'select';
+            S.pending = null;
+            render();
+            if (S.phase) api.toast('Maybe another time 💛');
+            break;
+          case 'exit':
+            S.level = null;
+            S.pending = null;
+            S.idx = 0;
+            S.phase = 'select';
+            render();
+            break;
+          case 'next':
+            if (S.phase === 'play') { S.idx = d.idx; render(); }
+            break;
         }
       },
       destroy() {}
