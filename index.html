@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Couples Game Night 💕</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="hearts-bg"></div>
+
+<main id="app">
+
+  <!-- ================= LOBBY ================= -->
+  <section id="screen-lobby" class="screen active">
+    <div class="card lobby-card">
+      <h1 class="logo">Couples<br>Game&nbsp;Night <span class="heart-beat">💕</span></h1>
+      <p class="tagline">Play together, wherever you are.</p>
+      <input id="name-input" type="text" maxlength="14" placeholder="Your name" autocomplete="off">
+      <div class="lobby-actions">
+        <button id="btn-host" class="btn btn-primary">Create a room</button>
+        <div class="join-row">
+          <input id="code-input" type="text" maxlength="4" placeholder="CODE" autocomplete="off">
+          <button id="btn-join" class="btn btn-secondary">Join</button>
+        </div>
+      </div>
+      <p id="lobby-error" class="error-msg"></p>
+    </div>
+  </section>
+
+  <!-- ================= WAITING ROOM ================= -->
+  <section id="screen-waiting" class="screen">
+    <div class="card lobby-card">
+      <h2>Invite your partner 💌</h2>
+      <p>Share this room code — they can join from any device:</p>
+      <div id="room-code" class="room-code">····</div>
+      <button id="btn-copy-code" class="btn btn-ghost">Copy link / code</button>
+      <div class="waiting-dots"><span></span><span></span><span></span></div>
+      <p class="muted">Waiting for your partner to connect…</p>
+    </div>
+  </section>
+
+  <!-- ================= MENU ================= -->
+  <section id="screen-menu" class="screen">
+    <header class="menu-header">
+      <h2>Pick a game 🎲</h2>
+      <p class="pair-names"><span id="menu-me"></span> <span class="heart-beat">❤️</span> <span id="menu-partner"></span></p>
+    </header>
+    <div id="game-grid" class="game-grid"></div>
+  </section>
+
+  <!-- ================= GAME ================= -->
+  <section id="screen-game" class="screen">
+    <div class="game-topbar">
+      <button id="btn-back" class="btn btn-ghost btn-small">← Menu</button>
+      <span id="game-title"></span>
+      <span id="game-score" class="game-score"></span>
+    </div>
+    <div id="game-container"></div>
+  </section>
+
+</main>
+
+<!-- ================= OVERLAYS ================= -->
+<div id="toast" class="toast"></div>
+
+<div id="overlay-disconnect" class="overlay">
+  <div class="card">
+    <h2>💔 Disconnected</h2>
+    <p id="disconnect-reason">Your partner left the room.</p>
+    <button id="btn-reload" class="btn btn-primary">Back to lobby</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="js/net.js"></script>
+<script src="js/data.js"></script>
+<script src="js/games.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
