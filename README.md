@@ -1,4 +1,4 @@
-# Couples Game Night 💕
+# Games Night 💕
 
 A cozy collection of five browser games for two people to play together from
 anywhere — one creates a room, the other joins with a 4-letter code. No

@@ -1,5 +1,5 @@
 /* ============ App shell: lobby, menu, game lifecycle ============ */
-const APP_VERSION = '10'; // bump together with the ?v= in index.html
+const APP_VERSION = '11'; // bump together with the ?v= in index.html
 
 const App = (() => {
   const $ = sel => document.querySelector(sel);
@@ -84,7 +84,7 @@ const App = (() => {
   $('#btn-copy-code').onclick = async () => {
     const url = location.origin + location.pathname + '#' + roomCode;
     try {
-      await navigator.clipboard.writeText(`Play Couples Game Night with me! 💕 Room code: ${roomCode}\n${url}`);
+      await navigator.clipboard.writeText(`Play Games Night with me! 💕 Room code: ${roomCode}\n${url}`);
       toast('Copied! Send it to your partner 💌');
     } catch (e) {
       toast('Room code: ' + roomCode);
