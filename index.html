@@ -21,8 +21,9 @@
       <input id="name-input" type="text" maxlength="14" placeholder="Your name" autocomplete="off">
       <div class="lobby-actions">
         <button id="btn-host" class="btn btn-primary">Create a room</button>
-        <div class="join-row">
-          <input id="code-input" type="text" maxlength="4" placeholder="CODE" autocomplete="off">
+        <p id="join-hint" class="muted" style="font-size:.9rem;margin:-4px 0 0"></p>
+        <div class="join-row" id="join-row">
+          <input id="code-input" type="text" maxlength="60" placeholder="CODE or invite link" autocomplete="off">
           <button id="btn-join" class="btn btn-secondary">Join</button>
         </div>
       </div>
@@ -34,9 +35,12 @@
   <section id="screen-waiting" class="screen">
     <div class="card lobby-card">
       <h2>Invite your partner 💌</h2>
-      <p>Share this room code — they can join from any device:</p>
+      <p>Send them the invite — they just tap it to join:</p>
       <div id="room-code" class="room-code">····</div>
-      <button id="btn-copy-code" class="btn btn-ghost">Copy link / code</button>
+      <div class="lobby-actions">
+        <button id="btn-share" class="btn btn-primary">💌 Send invite</button>
+        <button id="btn-copy-code" class="btn btn-ghost">📋 Copy invite link</button>
+      </div>
       <div class="waiting-dots"><span></span><span></span><span></span></div>
       <p class="muted">Waiting for your partner to connect…</p>
     </div>
@@ -80,9 +84,9 @@
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="js/net.js?v=12"></script>
-<script src="js/data.js?v=12"></script>
-<script src="js/games.js?v=12"></script>
-<script src="js/main.js?v=12"></script>
+<script src="js/net.js?v=13"></script>
+<script src="js/data.js?v=13"></script>
+<script src="js/games.js?v=13"></script>
+<script src="js/main.js?v=13"></script>
 </body>
 </html>

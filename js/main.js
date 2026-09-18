@@ -1,5 +1,5 @@
 /* ============ App shell: lobby, menu, game lifecycle ============ */
-const APP_VERSION = '12'; // bump together with the ?v= in index.html
+const APP_VERSION = '13'; // bump together with the ?v= in index.html
 
 const App = (() => {
   const $ = sel => document.querySelector(sel);
@@ -53,6 +53,25 @@ const App = (() => {
 
   function lobbyError(msg) { $('#lobby-error').textContent = msg; }
 
+  // random default nickname — names are optional, zero typing required
+  const NICKS = ['Honey', 'Sweetie', 'Cutie', 'Babe', 'Darling', 'Sunshine', 'Boo', 'Love', 'Angel', 'Cherry'];
+  $('#name-input').value = NICKS[Math.floor(Math.random() * NICKS.length)];
+
+  // invited via link? hide the manual-code path and get them in with one tap
+  let linkCode = '';
+  if (location.hash.length >= 5) {
+    linkCode = location.hash.slice(1).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+  }
+  if (linkCode.length === 4) {
+    $('#code-input').value = linkCode;
+    $('#btn-host').style.display = 'none';
+    $('#join-hint').textContent = `You're invited to room ${linkCode} 💞 — just tap Join!`;
+  }
+
+  function inviteUrl() {
+    return location.origin + location.pathname + '#' + roomCode;
+  }
+
   $('#btn-host').onclick = () => {
     myName = $('#name-input').value.trim() || 'Player 1';
     lobbyError('Creating room…');
@@ -68,7 +87,11 @@ const App = (() => {
   };
 
   $('#btn-join').onclick = () => {
-    const code = $('#code-input').value.trim().toUpperCase();
+    // accept a pasted invite link as well as a plain code
+    let code = $('#code-input').value.trim().toUpperCase();
+    const fromLink = code.match(/#([A-Z0-9]{4})/);
+    if (fromLink) code = fromLink[1];
+    if (linkCode.length === 4 && code.length !== 4) code = linkCode;
     if (code.length !== 4) { lobbyError('Enter the 4-letter room code.'); return; }
     myName = $('#name-input').value.trim() || 'Player 2';
     lobbyError('Connecting…');
@@ -82,19 +105,24 @@ const App = (() => {
   $('#name-input').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btn-host').click(); });
 
   $('#btn-copy-code').onclick = async () => {
-    const url = location.origin + location.pathname + '#' + roomCode;
     try {
-      await navigator.clipboard.writeText(`Play Games Night with me! 💕 Room code: ${roomCode}\n${url}`);
-      toast('Copied! Send it to your partner 💌');
+      await navigator.clipboard.writeText(`Play Games Night with me! 💕 ${inviteUrl()}`);
+      toast('Invite copied — send it to your partner 💌');
     } catch (e) {
-      toast('Room code: ' + roomCode);
+      toast(inviteUrl());
     }
   };
 
-  // auto-fill code from URL hash (#ABCD)
-  if (location.hash.length === 5) {
-    $('#code-input').value = location.hash.slice(1).toUpperCase();
-  }
+  $('#btn-share').onclick = async () => {
+    const url = inviteUrl();
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Games Night 💕', text: 'Play Games Night with me! 💕', url }); return; } catch (e) { /* cancelled */ }
+    }
+    try {
+      await navigator.clipboard.writeText(`Play Games Night with me! 💕 ${url}`);
+      toast('Invite copied — send it to your partner 💌');
+    } catch (e) { toast(url); }
+  };
 
   /* ---------- menu ---------- */
   function makeGameCard(id, g) {
