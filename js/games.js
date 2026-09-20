@@ -722,6 +722,106 @@ Games.ttl = {
 };
 
 /* =====================================================
+ * 5e. Guess My Answer
+ * ===================================================== */
+Games.guessmy = {
+  name: 'Guess My Answer', icon: '💭', desc: 'How well do you know us?',
+  init(root, api) {
+    const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const S = { q: 0, mine: null, theirs: null, right: { me: 0, them: 0 } };
+
+    root.innerHTML = `
+      <div class="game-panel">
+        <div class="game-prompt">Answer for yourself — and guess what ${esc(api.partnerName)} will say. Match = +1!</div>
+        <div class="likely-question" id="gm-q" style="font-size:1.6rem"></div>
+        <div id="gm-form"></div>
+        <div id="gm-reveal"></div>
+        <div style="margin-top:12px"><button class="btn btn-primary" id="gm-next" style="display:none">Next question →</button></div>
+      </div>`;
+    const qEl = root.querySelector('#gm-q');
+    const formEl = root.querySelector('#gm-form');
+    const revealEl = root.querySelector('#gm-reveal');
+    const nextBtn = root.querySelector('#gm-next');
+
+    function wireForm() {
+      const sendBtn = root.querySelector('#gm-send');
+      if (!sendBtn) return;
+      sendBtn.onclick = () => {
+        const ans = root.querySelector('#gm-mine')?.value.trim();
+        const guess = root.querySelector('#gm-guess')?.value.trim();
+        if (!ans || !guess) { api.toast('Fill in both answers!'); return; }
+        S.mine = { ans, guess };
+        formEl.innerHTML = `<p class="game-prompt">Locked in 🔒 — waiting for ${esc(api.partnerName)}…</p>`;
+        render();
+        api.send({ kind: 'ans', mine: ans, guess });
+      };
+    }
+
+    function showForm() {
+      formEl.innerHTML = `
+        <input type="text" id="gm-mine" maxlength="60" placeholder="My answer…" style="text-align:left;margin-bottom:8px">
+        <input type="text" id="gm-guess" maxlength="60" placeholder="I bet ${esc(api.partnerName)} says…" style="text-align:left">
+        <button class="btn btn-primary" id="gm-send" style="margin-top:10px">Lock it in 🔒</button>`;
+      wireForm();
+    }
+
+    function render() {
+      const q = DATA.guessmy[S.q % DATA.guessmy.length];
+      qEl.textContent = q;
+      if (!(S.mine && S.theirs)) return;
+      const iRight = norm(S.mine.guess) === norm(S.theirs.ans);
+      const tRight = norm(S.theirs.guess) === norm(S.mine.ans);
+      if (iRight) S.right.me++;
+      if (tRight) S.right.them++;
+      revealEl.innerHTML = `
+        <div style="text-align:left;max-width:440px;margin:0 auto">
+          <p style="margin:8px 0">${iRight ? '✅' : '❌'} <b>${esc(api.partnerName)} said:</b> ${esc(S.theirs.ans)}<br>
+          <small style="color:var(--muted)">You guessed: ${esc(S.mine.guess)}</small></p>
+          <p style="margin:8px 0">${tRight ? '✅' : '❌'} <b>You said:</b> ${esc(S.mine.ans)}<br>
+          <small style="color:var(--muted)">${esc(api.partnerName)} guessed: ${esc(S.theirs.guess)}</small></p>
+        </div>
+        <div class="result-banner ${iRight && tRight ? 'win' : (iRight || tRight ? 'draw' : 'lose')}">
+          ${iRight && tRight ? 'Perfect match! 💞 Both guessed right!' : (iRight || tRight ? 'Half right! 💫' : 'Neither! You clearly need to talk more 😄')}
+        </div>`;
+      nextBtn.style.display = 'inline-block';
+      api.setScore(`Guessed right: ${S.right.me} — ${S.right.them}`);
+    }
+
+    nextBtn.onclick = () => {
+      if (!(S.mine && S.theirs)) return;
+      S.q++;
+      S.mine = null;
+      S.theirs = null;
+      revealEl.innerHTML = '';
+      nextBtn.style.display = 'none';
+      showForm();
+      render();
+      api.send({ kind: 'next', q: S.q });
+    };
+
+    showForm();
+    render();
+    return {
+      onMsg(d) {
+        if (d.kind === 'ans' && !S.theirs) {
+          S.theirs = { ans: d.mine, guess: d.guess };
+          render();
+        } else if (d.kind === 'next') {
+          S.q = d.q;
+          S.mine = null;
+          S.theirs = null;
+          revealEl.innerHTML = '';
+          nextBtn.style.display = 'none';
+          showForm();
+          render();
+        }
+      },
+      destroy() {}
+    };
+  }
+};
+
+/* =====================================================
  * 6. Intimate (18+ — requires consent from BOTH partners)
  * ===================================================== */
 Games.intimate = {
@@ -740,6 +840,9 @@ Games.intimate = {
       timer: null,     // { end, iv, dare }
       lv: 0,           // level-up progress
       deg: 0,          // accumulated wheel rotation
+      kiss: null,      // { i, end, iv } current kiss-roulette round
+      kisses: 0,       // kiss tally
+      mood: 0,         // rounds played — drives the warm -> intense curve
     };
 
     root.innerHTML = `<div class="game-panel" id="in-panel"></div>`;
@@ -818,12 +921,15 @@ Games.intimate = {
         else if (S.mode === 'timer') renderTimer();
         else if (S.mode === 'wheel') renderWheel();
         else if (S.mode === 'levels') renderLevels();
+        else if (S.mode === 'kiss') renderKiss();
       }
     }
 
     /* ---------- shared: back to game menu ---------- */
     function toMode(mode, sync = true) {
       stopTimer();
+      if (S.kiss && S.kiss.iv) clearInterval(S.kiss.iv);
+      S.kiss = null;
       S.mode = mode;
       S.snap = null;
       if (mode === 'tod' && !S.tod) S.tod = { turn: 0, showing: null, passes: { me: 0, them: 0 } };
@@ -853,6 +959,7 @@ Games.intimate = {
           <button class="game-card" data-mode="tod"><span class="gc-icon">🎯</span><span class="gc-name">Truth or Dare</span></button>
           <button class="game-card" data-mode="timer"><span class="gc-icon">⏱️</span><span class="gc-name">60-Second Challenge</span></button>
           <button class="game-card" data-mode="wheel"><span class="gc-icon">🎡</span><span class="gc-name">${S.level === 'extreme' ? 'Wheel of Fire' : 'Spin the Wheel'}</span></button>
+          <button class="game-card" data-mode="kiss"><span class="gc-icon">💋</span><span class="gc-name">Kiss Roulette</span></button>
           ${S.level === 'extreme' ? '<button class="game-card" data-mode="levels"><span class="gc-icon">🏆</span><span class="gc-name">Level Up</span></button>' : ''}
         </div>
         <div style="margin-top:16px">
@@ -936,6 +1043,14 @@ Games.intimate = {
     function darePool() {
       const cfg = L[S.level];
       return S.apart ? cfg.daresApart : cfg.daresTogether;
+    }
+
+    /* mood curve: pools are ordered warm -> intense; early rounds only draw
+     * from the milder start, unlocking the spicier end as the night goes on */
+    function pickByMood(pool) {
+      const frac = Math.min(1, 0.4 + S.mood * 0.15);
+      const n = Math.max(3, Math.round(pool.length * frac));
+      return rnd(pool.slice(0, n));
     }
 
     /* animate the wheel to a wedge (works for both local spins and partner spins) */
@@ -1134,6 +1249,58 @@ Games.intimate = {
       };
     }
 
+    /* ---------- kiss roulette ---------- */
+    function renderKiss() {
+      const cfg = L[S.level];
+      if (S.kiss) {
+        panel.innerHTML = `
+          <h3 class="likely-question" style="font-size:1.7rem">Kiss Roulette 💋</h3>
+          <div class="big-card-question">${esc(cfg.kissStyles[S.kiss.i])}</div>
+          <div class="draw-word" id="kiss-count" style="font-size:2.6rem">10</div>
+          <div id="kiss-after"></div>
+          <div style="margin-top:10px">${backBtn().outerHTML.replace('<button', '<button id="kiss-back"')}</div>`;
+        panel.querySelector('#kiss-back').onclick = () => toMode('menu');
+        S.kiss.iv = setInterval(() => {
+          const left = Math.max(0, Math.ceil((S.kiss.end - Date.now()) / 1000));
+          const el = panel.querySelector('#kiss-count');
+          if (el) el.textContent = left;
+          if (left <= 0) {
+            if (S.kiss && S.kiss.iv) { clearInterval(S.kiss.iv); S.kiss.iv = null; }
+            const after = panel.querySelector('#kiss-after');
+            if (!after) return;
+            after.innerHTML = `
+              <div class="result-banner win">Time! Tally: ${S.kisses} kisses delivered 💋</div>
+              <div style="margin-top:10px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+                <button class="btn btn-primary" id="kiss-done">Delivered 💋 +1</button>
+                <button class="btn btn-ghost" style="color:var(--rose-dark);border-color:var(--rose-light)" id="kiss-again">Another kiss 🔄</button>
+              </div>`;
+            panel.querySelector('#kiss-done').onclick = () => {
+              S.kisses++;
+              S.kiss = null;
+              render();
+              api.send({ kind: 'kissdone', n: S.kisses });
+            };
+            panel.querySelector('#kiss-again').onclick = () => { S.kiss = null; render(); };
+          }
+        }, 250);
+      } else {
+        panel.innerHTML = `
+          <h3 class="likely-question" style="font-size:1.7rem">Kiss Roulette 💋</h3>
+          <p class="game-prompt">Draw a kiss style, deliver it to the camera in 10 seconds, and count your kisses. Either of you can draw!</p>
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
+            <button class="btn btn-primary btn-big" id="kiss-get">Draw a kiss 💋</button>
+            ${backBtn().outerHTML.replace('<button', '<button id="kiss-back2"')}
+          </div>
+          <p class="muted" style="margin-top:12px;font-size:.9rem">Kisses delivered so far: ${S.kisses} 💋</p>`;
+        panel.querySelector('#kiss-back2').onclick = () => toMode('menu');
+        panel.querySelector('#kiss-get').onclick = () => {
+          S.kiss = { i: rnd(cfg.kissStyles), end: Date.now() + 10000, iv: null };
+          render();
+          api.send({ kind: 'kiss', i: S.kiss.i });
+        };
+      }
+    }
+
     /* ---------- truth or dare ---------- */
     function renderTod() {
       const cfg = L[S.level];
@@ -1177,7 +1344,8 @@ Games.intimate = {
         if (mine) {
           const pick = type => {
             const list = type === 'truth' ? cfg.truths : darePool();
-            const i = rnd(list);
+            const i = type === 'truth' ? rnd(list) : pickByMood(list);
+            S.mood++;
             S.tod.showing = { type, text: list[i] };
             render();
             api.send({ kind: 'tod', type, i });
@@ -1221,7 +1389,8 @@ Games.intimate = {
         panel.querySelector('#timer-back3').onclick = () => toMode('menu');
         panel.querySelector('#timer-start').onclick = () => {
           const pool = darePool();
-          const i = rnd(pool);
+          const i = pickByMood(pool);
+          S.mood++;
           S.timer = { end: Date.now() + 60000, dare: pool[i], iv: null };
           render();
           api.send({ kind: 'timer', i });
@@ -1283,6 +1452,19 @@ Games.intimate = {
             break;
           case 'lv':
             if (S.phase === 'play' && S.mode === 'levels') { S.lv = d.v; render(); }
+            break;
+          case 'kiss':
+            if (S.phase === 'play' && S.mode === 'kiss') {
+              S.kiss = { i: d.i, end: Date.now() + 10000, iv: null };
+              render();
+            }
+            break;
+          case 'kissdone':
+            S.kisses = Math.max(S.kisses, d.n || 0);
+            if (S.phase === 'play' && S.mode === 'kiss') {
+              if (S.kiss && S.kiss.iv) { clearInterval(S.kiss.iv); S.kiss.iv = null; }
+              render();
+            }
             break;
           case 'apart':
             if (S.phase === 'play') {
