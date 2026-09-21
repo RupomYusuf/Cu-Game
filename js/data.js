@@ -461,3 +461,27 @@ DATA.guessmy = [
   "What do I always say wrong on purpose because it makes you laugh?",
   "What's the one thing I can never resist?",
 ];
+
+/* --- Finish My Sentence --- */
+DATA.finish = [
+  "When you hold my hand, I feel ___",
+  "Our next date will be ___",
+  "You always make me laugh when ___",
+  "I knew I liked you when ___",
+  "If we had a pet, we'd name it ___",
+  "Our song should be ___",
+  "In ten years, we will be ___",
+  "The first thing I noticed about you was ___",
+  "You're better than me at ___",
+  "I secretly love it when you ___",
+  "Our next trip should be to ___",
+  "When you're not around, I ___",
+  "The food that describes you is ___",
+  "Your superpower is ___",
+  "If we starred in a movie, it would be called ___",
+  "You make the world's best ___",
+  "Together we are unstoppable at ___",
+  "I want to learn ___ with you",
+  "Our home will always have ___",
+  "When I can't sleep, I ___",
+];

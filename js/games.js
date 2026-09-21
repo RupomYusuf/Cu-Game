@@ -822,6 +822,604 @@ Games.guessmy = {
 };
 
 /* =====================================================
+ * 5f. Rock Paper Scissors
+ * ===================================================== */
+Games.rps = {
+  name: 'Rock Paper Scissors', icon: '⚡', desc: 'Pick in secret — best reflex wins',
+  init(root, api) {
+    const EMO = ['✊', '✋', '✌️'];
+    const NAME = ['Rock', 'Paper', 'Scissors'];
+    const S = { mine: null, theirs: null, score: { me: 0, them: 0 } };
+    root.innerHTML = `
+      <div class="game-panel">
+        <div class="turn-indicator" id="rps-turn"></div>
+        <div class="likely-buttons" id="rps-buttons"></div>
+        <div id="rps-result"></div>
+        <div style="margin-top:12px"><button class="btn btn-primary" id="rps-next" style="display:none">Next round →</button></div>
+      </div>`;
+    const turnEl = root.querySelector('#rps-turn');
+    const btnsEl = root.querySelector('#rps-buttons');
+    const resultEl = root.querySelector('#rps-result');
+    const nextBtn = root.querySelector('#rps-next');
+
+    function render() {
+      btnsEl.innerHTML = '';
+      resultEl.innerHTML = '';
+      nextBtn.style.display = 'none';
+      const revealed = S.mine !== null && S.theirs !== null;
+      EMO.forEach((e, i) => {
+        const b = document.createElement('button');
+        b.className = 'likely-btn';
+        b.style.fontSize = '2.2rem';
+        b.textContent = e;
+        if (revealed) {
+          b.disabled = true;
+          if (S.mine === i) b.classList.add('selected');
+          if (S.theirs === i) b.classList.add('match');
+        } else {
+          b.onclick = () => {
+            S.mine = i;
+            render();
+            api.send({ kind: 'pick', p: i });
+          };
+        }
+        btnsEl.appendChild(b);
+      });
+      if (!revealed) {
+        turnEl.textContent = S.mine === null ? 'Pick your weapon — in secret!' : 'Waiting for ' + esc(api.partnerName) + '…';
+      } else {
+        // a beats b iff b is the one a beats: rock>scissors, paper>rock, scissors>paper
+        const beats = (a, b) => (b + 1) % 3 === a;
+        turnEl.textContent = `You: ${NAME[S.mine]}  ·  ${esc(api.partnerName)}: ${NAME[S.theirs]}`;
+        let msg;
+        if (S.mine === S.theirs) msg = `<div class="result-banner draw">Tie! Great minds 🤝</div>`;
+        else if (beats(S.mine, S.theirs)) { S.score.me++; msg = `<div class="result-banner win">You win the round! 🎉</div>`; }
+        else { S.score.them++; msg = `<div class="result-banner lose">${esc(api.partnerName)} wins the round!</div>`; }
+        resultEl.innerHTML = msg;
+        nextBtn.style.display = 'inline-block';
+        api.setScore(`Rounds: ${S.score.me} — ${S.score.them}`);
+      }
+    }
+
+    nextBtn.onclick = () => {
+      S.mine = null;
+      S.theirs = null;
+      render();
+      api.send({ kind: 'next' });
+    };
+
+    render();
+    return {
+      onMsg(d) {
+        if (d.kind === 'pick' && S.theirs === null) { S.theirs = d.p; render(); }
+        else if (d.kind === 'next') { S.mine = null; S.theirs = null; render(); }
+      },
+      destroy() {}
+    };
+  }
+};
+
+/* =====================================================
+ * 5g. Reaction Duel
+ * ===================================================== */
+Games.reaction = {
+  name: 'Reaction Duel', icon: '⚡', desc: 'First tap on green wins — no false starts!',
+  init(root, api) {
+    const S = { ready: { me: false, them: false }, phase: 'idle', goAt: 0, timer: null, myMs: null, theirMs: null, score: { me: 0, them: 0 } };
+
+    root.innerHTML = `<div class="game-panel"><div id="rd-area"></div></div>`;
+    const area = root.querySelector('#rd-area');
+
+    function stopTimers() { if (S.timer) { clearTimeout(S.timer); S.timer = null; } }
+
+    function render() {
+      stopTimers();
+      if (S.phase === 'idle') {
+        const both = S.ready.me && S.ready.them;
+        area.innerHTML = `
+          <h3 class="likely-question" style="font-size:1.6rem">Reaction Duel ⚡</h3>
+          <p class="game-prompt">Wait for GREEN, then tap as fast as you can. Tap early and you lose the round!</p>
+          <button class="btn btn-primary btn-big" id="rd-ready" ${S.ready.me ? 'disabled' : ''}>${S.ready.me ? 'Ready ✓' : (both ? 'Go!' : 'I\'m ready 🙋')}</button>
+          <p class="muted" style="margin-top:10px">${both ? 'Starting…' : `Waiting for ${esc(api.partnerName)} to ready up…`}</p>`;
+        area.querySelector('#rd-ready').onclick = () => {
+          S.ready.me = true;
+          render();
+          api.send({ kind: 'ready' });
+          maybeArm();
+        };
+        maybeArm();
+      } else if (S.phase === 'wait') {
+        area.innerHTML = `
+          <h3 class="likely-question" style="font-size:1.6rem">Reaction Duel ⚡</h3>
+          <div class="big-card-question" style="background:#3a1c2a;color:#fff;border-radius:16px;min-height:130px">Wait for it…<br>🔴</div>
+          <p class="muted">Tap now and it's a false start!</p>
+          <div id="rd-tapzone" style="position:absolute;inset:0"></div>`;
+        S.timer = setTimeout(go, S.delay);
+        area.parentElement.style.position = 'relative';
+        area.parentElement.onclick = () => falseStart();
+      } else if (S.phase === 'go') {
+        area.innerHTML = `
+          <div class="big-card-question" style="background:#2e9e5b;color:#fff;border-radius:16px;min-height:130px;font-size:2.4rem">TAP! 🟢</div>
+          <div id="rd-tapzone" style="position:absolute;inset:0"></div>`;
+        area.parentElement.style.position = 'relative';
+        area.parentElement.onclick = () => tap();
+      } else if (S.phase === 'result') {
+        let msg;
+        if (S.myMs < 0) { S.score.them++; msg = `<div class="result-banner lose">False start! You lose the round 😅</div>`; }
+        else if (S.theirMs < 0) { S.score.me++; msg = `<div class="result-banner win">${esc(api.partnerName)} false-started! You win! 🎉</div>`; }
+        else if (S.myMs < S.theirMs) { S.score.me++; msg = `<div class="result-banner win">You win! ${S.myMs}ms vs ${S.theirMs}ms ⚡</div>`; }
+        else if (S.theirMs < S.myMs) { S.score.them++; msg = `<div class="result-banner lose">${esc(api.partnerName)} wins! ${S.theirMs}ms vs your ${S.myMs}ms</div>`; }
+        else msg = `<div class="result-banner draw">Dead heat! 🤝</div>`;
+        area.innerHTML = `
+          <h3 class="likely-question" style="font-size:1.6rem">Reaction Duel ⚡</h3>
+          ${msg}
+          <button class="btn btn-primary" id="rd-next" style="margin-top:10px">Next round →</button>`;
+        api.setScore(`Rounds: ${S.score.me} — ${S.score.them}`);
+        area.parentElement.onclick = null;
+        area.querySelector('#rd-next').onclick = () => {
+          Object.assign(S, { ready: { me: false, them: false }, phase: 'idle', myMs: null, theirMs: null });
+          render();
+          api.send({ kind: 'next' });
+        };
+      }
+    }
+
+    function maybeArm() {
+      if (S.ready.me && S.ready.them && api.isHost && S.phase === 'idle') {
+        S.phase = 'wait';
+        S.delay = 1500 + Math.floor(Math.random() * 4000);
+        render();
+        api.send({ kind: 'arm', delay: S.delay });
+      }
+    }
+
+    function go() {
+      if (S.phase !== 'wait') return;
+      S.phase = 'go';
+      S.goAt = Date.now();
+      render();
+    }
+
+    function falseStart() {
+      if (S.phase !== 'wait' || S.myMs !== null) return;
+      stopTimers();
+      S.myMs = -1;
+      S.phase = 'result';
+      render();
+      api.send({ kind: 'tap', ms: -1 });
+    }
+
+    function tap() {
+      if (S.phase !== 'go' || S.myMs !== null) return;
+      S.myMs = Date.now() - S.goAt;
+      S.phase = 'result';
+      render();
+      api.send({ kind: 'tap', ms: S.myMs });
+    }
+
+    render();
+    return {
+      onMsg(d) {
+        if (d.kind === 'ready') { S.ready.them = true; if (S.phase === 'idle') render(); maybeArm(); }
+        else if (d.kind === 'arm') { S.delay = d.delay; S.phase = 'wait'; render(); }
+        else if (d.kind === 'tap') { S.theirMs = d.ms; if (S.myMs !== null && S.phase !== 'idle') { S.phase = 'result'; render(); } }
+        else if (d.kind === 'next') { Object.assign(S, { ready: { me: false, them: false }, phase: 'idle', myMs: null, theirMs: null }); render(); }
+      },
+      destroy() { stopTimers(); }
+    };
+  }
+};
+
+/* =====================================================
+ * 5h. Memory Match
+ * ===================================================== */
+Games.memory = {
+  name: 'Memory Match', icon: '🃏', desc: 'Find the emoji pairs — most pairs wins',
+  init(root, api) {
+    const EMO = ['💋', '🔥', '💕', '🌹', '😍', '🌙', '✨', '💘'];
+    const S = { order: null, sel: [], matched: Array(16).fill(-1), turn: 0, lock: false, over: false, pairs: { 0: 0, 1: 0 }, timer: null };
+
+    root.innerHTML = `<div class="game-panel"><div class="turn-indicator" id="mm-turn"></div><div id="mm-grid"></div><div id="mm-result"></div><div style="margin-top:12px"><button class="btn btn-primary" id="mm-again" style="display:none">Rematch 🔁</button></div></div>`;
+    const turnEl = root.querySelector('#mm-turn');
+    const gridEl = root.querySelector('#mm-grid');
+    const resultEl = root.querySelector('#mm-result');
+    const againBtn = root.querySelector('#mm-again');
+
+    const myTurn = () => (S.turn === 0) === api.isHost;
+
+    function deal() {
+      const deck = [];
+      EMO.forEach((e, i) => { deck.push(i, i); });
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+      S.order = deck;
+      S.sel = [];
+      S.matched = Array(16).fill(-1);
+      S.turn = 0;
+      S.lock = false;
+      S.over = false;
+      S.pairs = { 0: 0, 1: 0 };
+      resultEl.innerHTML = '';
+      againBtn.style.display = 'none';
+      render();
+      api.send({ kind: 'deal', order: S.order });
+    }
+
+    function render() {
+      if (S.order === null) return;
+      turnEl.textContent = S.over ? '' :
+        myTurn() ? 'Your turn — flip two cards!' : `Waiting for ${esc(api.partnerName)}…`;
+      api.setScore(`Pairs: ${S.pairs[api.isHost ? 0 : 1]} — ${S.pairs[api.isHost ? 1 : 0]}`);
+      gridEl.innerHTML = '';
+      gridEl.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:420px;margin:0 auto';
+      S.order.forEach((pairIdx, i) => {
+        const b = document.createElement('button');
+        const isMatched = S.matched[i] !== -1;
+        const isFlipped = S.sel.includes(i);
+        b.style.cssText = `aspect-ratio:1;border:none;border-radius:12px;font-size:2rem;cursor:pointer;font-family:inherit;background:${isMatched ? (S.matched[i] === (api.isHost ? 0 : 1) ? '#d9f2e3' : '#ffd3e0') : (isFlipped ? '#fff0f5' : '#ffd3e0')};opacity:${isMatched ? 0.85 : 1}`;
+        b.textContent = (isMatched || isFlipped) ? EMO[pairIdx] : '?';
+        b.disabled = isMatched || isFlipped || S.lock || S.over || !myTurn();
+        if (!b.disabled) b.onclick = () => flip(i);
+        gridEl.appendChild(b);
+      });
+    }
+
+    function flip(i) {
+      if (S.lock || S.over || S.sel.length >= 2 || S.sel.includes(i) || S.matched[i] !== -1 || !myTurn()) return;
+      applyFlip(i);
+      api.send({ kind: 'flip', i });
+    }
+
+    function applyFlip(i) {
+      S.sel.push(i);
+      render();
+      if (S.sel.length === 2) {
+        const [a, b] = S.sel;
+        if (S.order[a] === S.order[b]) {
+          S.timer = setTimeout(() => {
+            S.matched[a] = S.turn;
+            S.matched[b] = S.turn;
+            S.pairs[S.turn]++;
+            S.sel = [];
+            const done = S.matched.every(m => m !== -1);
+            if (done) {
+              S.over = true;
+              const mine = S.pairs[api.isHost ? 0 : 1];
+              const theirs = S.pairs[api.isHost ? 1 : 0];
+              resultEl.innerHTML = `<div class="result-banner ${mine > theirs ? 'win' : mine < theirs ? 'lose' : 'draw'}">${mine > theirs ? 'You win! 🎉' : mine < theirs ? `${esc(api.partnerName)} wins!` : 'It\'s a tie! 🤝'}</div>`;
+              againBtn.style.display = 'inline-block';
+            }
+            render();
+          }, 500);
+        } else {
+          S.lock = true;
+          S.timer = setTimeout(() => {
+            S.sel = [];
+            S.lock = false;
+            S.turn ^= 1;
+            render();
+          }, 950);
+        }
+      }
+    }
+
+    againBtn.onclick = () => {
+      if (api.isHost) deal();
+      else api.send({ kind: 'rematch' });
+    };
+
+    // host deals immediately; guest waits for the deal
+    if (api.isHost) deal();
+    else render();
+
+    return {
+      onMsg(d) {
+        if (d.kind === 'deal') {
+          S.order = d.order;
+          S.sel = [];
+          S.matched = Array(16).fill(-1);
+          S.turn = 0;
+          S.lock = false;
+          S.over = false;
+          S.pairs = { 0: 0, 1: 0 };
+          resultEl.innerHTML = '';
+          againBtn.style.display = 'none';
+          render();
+        } else if (d.kind === 'flip') {
+          applyFlip(d.i);
+        } else if (d.kind === 'rematch' && api.isHost) {
+          deal();
+          api.send({ kind: 'deal', order: S.order });
+        }
+      },
+      destroy() { if (S.timer) clearTimeout(S.timer); }
+    };
+  }
+};
+
+/* =====================================================
+ * 5i. 20 Questions
+ * ===================================================== */
+Games.twentyq = {
+  name: '20 Questions', icon: '🎯', desc: 'Think of a thing — can they guess it?',
+  init(root, api) {
+    const S = { role: api.isHost ? 'hide' : 'ask', secret: '', questions: 0, feed: [], over: false, iWon: null };
+
+    root.innerHTML = `<div class="game-panel" id="tq-panel"></div>`;
+    const panel = root.querySelector('#tq-panel');
+
+    function render() {
+      panel.innerHTML = '';
+      const iHide = S.role === 'hide';
+      if (S.over) {
+        const win = iHide ? S.iWon : !S.iWon;
+        const msg = iHide
+          ? (S.iWon ? `They couldn't guess “${esc(S.secret)}” — point for you! 🕵️` : 'They guessed it! Point for them 🎉')
+          : (S.iWon ? 'Out of questions... or wrong guess — point for them 🙃' : 'You guessed it! Point for you 🎉');
+        panel.innerHTML = `
+          <div class="result-banner ${win ? 'win' : 'lose'}">${msg}</div>
+          <button class="btn btn-primary" id="tq-next" style="margin-top:12px">Swap roles →</button>`;
+        panel.querySelector('#tq-next').onclick = () => {
+          S.role = S.role === 'hide' ? 'ask' : 'hide';
+          S.questions = 0; S.feed = []; S.over = false; S.iWon = null; S.secret = '';
+          render();
+          api.send({ kind: 'next' });
+        };
+        return;
+      }
+      if (iHide && !S.secret) {
+        panel.innerHTML = `
+          <h3 class="likely-question" style="font-size:1.6rem">Think of something 🤫</h3>
+          <p class="game-prompt">A person, place, food, object — anything. ${esc(api.partnerName)} gets 20 yes/no questions.</p>
+          <input type="text" id="tq-secret" maxlength="40" placeholder="Your secret thing…" style="text-align:left">
+          <button class="btn btn-primary" id="tq-start" style="margin-top:10px">Start the interrogation 🎯</button>`;
+        panel.querySelector('#tq-start').onclick = () => {
+          S.secret = panel.querySelector('#tq-secret').value.trim();
+          if (!S.secret) return;
+          render();
+          api.send({ kind: 'start' });
+        };
+        return;
+      }
+      const asking = S.role === 'ask';
+      const feedHtml = S.feed.map(f => {
+        if (f.k === 'q') {
+          let ansBtns = '';
+          if (iHide && !f.ans) ansBtns = `<div style="margin-top:6px">
+            <button class="btn btn-small btn-primary tq-a" data-v="Yes">Yes</button>
+            <button class="btn btn-small btn-secondary tq-a" data-v="No">No</button>
+            <button class="btn btn-small btn-ghost tq-a" style="color:var(--rose-dark);border-color:var(--rose-light)" data-v="Maybe">Maybe</button></div>`;
+          return `<p style="margin:6px 0"><b>${esc(f.by)}:</b> ${esc(f.text)}${f.ans ? ` <b style="color:var(--rose-dark)">— ${esc(f.ans)}</b>` : ''}${ansBtns}</p>`;
+        }
+        if (f.k === 'sys') return `<p class="sys" style="color:var(--muted);font-style:italic;margin:6px 0">${esc(f.text)}</p>`;
+        if (f.k === 'g') {
+          let vBtns = '';
+          if (iHide && !f.ans) vBtns = `<div style="margin-top:6px">
+            <button class="btn btn-small btn-primary tq-v" data-ok="1">Correct! 🎉</button>
+            <button class="btn btn-small btn-secondary tq-v" data-ok="0">Wrong! 🙃</button></div>`;
+          return `<p style="margin:6px 0"><b>🎯 ${esc(f.by)}'s final guess:</b> ${esc(f.text)}${f.ans ? ` <b style="color:var(--rose-dark)">— ${esc(f.ans)}</b>` : ''}${vBtns}</p>`;
+        }
+        return '';
+      }).join('');
+      panel.innerHTML = `
+        <h3 class="likely-question" style="font-size:1.5rem">${asking ? 'Ask yes/no questions!' : 'Answer their questions'}</h3>
+        <div class="card-tag">${S.questions} / 20 questions used</div>
+        <div class="chat-log" id="tq-feed" style="height:220px">${feedHtml}</div>
+        <div id="tq-inputrow"></div>`;
+      const feedEl = panel.querySelector('#tq-feed');
+      feedEl.scrollTop = feedEl.scrollHeight;
+
+      // answer buttons for the hider
+      panel.querySelectorAll('.tq-a').forEach(b => {
+        b.onclick = () => {
+          const last = [...S.feed].reverse().find(f => f.k === 'q' && !f.ans);
+          if (last) { last.ans = b.dataset.v; render(); api.send({ kind: 'a', v: b.dataset.v }); }
+        };
+      });
+
+      // verdict buttons for the final guess
+      panel.querySelectorAll('.tq-v').forEach(b => {
+        b.onclick = () => {
+          const g = [...S.feed].reverse().find(f => f.k === 'g' && !f.ans);
+          if (g) {
+            const ok = b.dataset.ok === '1';
+            g.ans = ok ? 'CORRECT! 🎉' : 'Wrong! 🙃';
+            S.over = true;
+            S.iWon = !ok;
+            render();
+            api.send({ kind: 'verdict', ok });
+          }
+        };
+      });
+
+      const row = panel.querySelector('#tq-inputrow');
+      if (asking) {
+        row.innerHTML = `
+          <div class="chat-input-row" style="margin-top:8px">
+            <input type="text" id="tq-ask" maxlength="80" placeholder="Ask a yes/no question…">
+            <button class="btn btn-primary" id="tq-askbtn">Ask</button>
+          </div>
+          <div class="chat-input-row" style="margin-top:6px">
+            <input type="text" id="tq-guessin" maxlength="40" placeholder="Or make your final guess…">
+            <button class="btn btn-secondary" id="tq-guessbtn">🎯 Guess</button>
+          </div>`;
+        const ask = () => {
+          const v = row.querySelector('#tq-ask').value.trim();
+          if (!v) return;
+          S.questions++;
+          S.feed.push({ k: 'q', by: api.myName, text: v });
+          render();
+          api.send({ kind: 'ask', text: v });
+        };
+        row.querySelector('#tq-askbtn').onclick = ask;
+        row.querySelector('#tq-ask').addEventListener('keydown', e => { if (e.key === 'Enter') ask(); });
+        row.querySelector('#tq-guessbtn').onclick = () => {
+          const v = row.querySelector('#tq-guessin').value.trim();
+          if (!v) return;
+          S.feed.push({ k: 'g', by: api.myName, text: v });
+          render();
+          api.send({ kind: 'guess', text: v });
+        };
+        row.querySelector('#tq-guessin').addEventListener('keydown', e => { if (e.key === 'Enter') row.querySelector('#tq-guessbtn').click(); });
+      } else {
+        row.innerHTML = `<p class="muted" style="margin-top:8px">Answer with the buttons above 🤫</p>`;
+      }
+    }
+
+    render();
+    return {
+      onMsg(d) {
+        if (d.kind === 'start') { S.feed.push({ k: 'sys', text: 'The interrogation begins! 🎯' }); render(); }
+        else if (d.kind === 'ask') { S.questions++; S.feed.push({ k: 'q', by: api.partnerName, text: d.text }); render(); }
+        else if (d.kind === 'a') {
+          const last = [...S.feed].reverse().find(f => f.k === 'q' && !f.ans);
+          if (last) { last.ans = d.v; render(); }
+        } else if (d.kind === 'guess') { S.feed.push({ k: 'g', by: api.partnerName, text: d.text }); render(); }
+        else if (d.kind === 'verdict') {
+          const g = [...S.feed].reverse().find(f => f.k === 'g');
+          if (g) g.ans = d.ok ? 'CORRECT! 🎉' : 'Wrong! 🙃';
+          S.over = true;
+          S.iWon = !d.ok;
+          render();
+        } else if (d.kind === 'next') {
+          S.role = S.role === 'hide' ? 'ask' : 'hide';
+          S.questions = 0; S.feed = []; S.over = false; S.iWon = null; S.secret = '';
+          render();
+        }
+      },
+      destroy() {}
+    };
+  }
+};
+
+/* =====================================================
+ * 5j. Finish My Sentence + Word Association
+ * ===================================================== */
+Games.finish = {
+  name: 'Finish My Sentence', icon: '✍️', desc: 'Complete it — then compare',
+  init(root, api) {
+    const S = { q: 0, mine: null, theirs: null };
+    root.innerHTML = `
+      <div class="game-panel">
+        <div class="big-card-question" id="fi-q" style="min-height:80px"></div>
+        <div id="fi-form"></div>
+        <div id="fi-reveal"></div>
+        <div style="margin-top:12px"><button class="btn btn-primary" id="fi-next" style="display:none">Next →</button></div>
+      </div>`;
+    const qEl = root.querySelector('#fi-q');
+    const formEl = root.querySelector('#fi-form');
+    const revealEl = root.querySelector('#fi-reveal');
+    const nextBtn = root.querySelector('#fi-next');
+
+    function wire() {
+      formEl.querySelector('#fi-send').onclick = () => {
+        const v = formEl.querySelector('#fi-in').value.trim();
+        if (!v) return;
+        S.mine = v;
+        formEl.innerHTML = `<p class="game-prompt">Saved — waiting for ${esc(api.partnerName)}…</p>`;
+        render();
+        api.send({ kind: 'ans', ans: v });
+      };
+    }
+
+    function showForm() {
+      formEl.innerHTML = `
+        <input type="text" id="fi-in" maxlength="80" placeholder="Your ending…" style="text-align:left">
+        <button class="btn btn-primary" id="fi-send" style="margin-top:10px">Reveal time ✨</button>`;
+      wire();
+    }
+
+    function render() {
+      qEl.textContent = DATA.finish[S.q % DATA.finish.length];
+      if (S.mine && S.theirs) {
+        revealEl.innerHTML = `
+          <div style="text-align:left;max-width:440px;margin:0 auto">
+            <p style="margin:8px 0"><b>${esc(api.myName)}:</b> ${esc(S.mine)}</p>
+            <p style="margin:8px 0"><b>${esc(api.partnerName)}:</b> ${esc(S.theirs)}</p>
+          </div>
+          <div class="result-banner draw">Same minds think alike… or hilariously don't 😄</div>`;
+        nextBtn.style.display = 'inline-block';
+      }
+    }
+
+    showForm();
+    render();
+    return {
+      onMsg(d) {
+        if (d.kind === 'ans' && !S.theirs) { S.theirs = d.ans; render(); }
+        else if (d.kind === 'next') {
+          S.q = d.q; S.mine = null; S.theirs = null;
+          revealEl.innerHTML = ''; nextBtn.style.display = 'none';
+          showForm(); render();
+        }
+      },
+      destroy() {}
+    };
+  }
+};
+
+Games.wordchain = {
+  name: 'Word Association', icon: '🔗', desc: 'Build a chain of connected words',
+  init(root, api) {
+    const S = { chain: [], turn: 0 };
+    const myTurn = () => (S.turn === 0) === api.isHost;
+
+    root.innerHTML = `<div class="game-panel">
+      <div class="game-prompt">Take turns typing a word connected to the last one. Follow the chain and see where your minds wander 🌀</div>
+      <div class="turn-indicator" id="wc-turn"></div>
+      <div id="wc-chain" style="min-height:60px;font-size:1.15rem;line-height:2;word-break:break-word"></div>
+      <div class="chat-input-row" style="max-width:420px;margin:10px auto">
+        <input type="text" id="wc-in" maxlength="30" placeholder="Your word…">
+        <button class="btn btn-primary" id="wc-add">Add</button>
+      </div>
+      <button class="btn btn-ghost btn-small" style="color:var(--rose-dark);border-color:var(--rose-light)" id="wc-clear">New chain ↺</button>
+    </div>`;
+    const turnEl = root.querySelector('#wc-turn');
+    const chainEl = root.querySelector('#wc-chain');
+    const inEl = root.querySelector('#wc-in');
+    const addBtn = root.querySelector('#wc-add');
+
+    function render() {
+      chainEl.innerHTML = S.chain.length
+        ? S.chain.map(w => `<span style="background:var(--rose-light);border-radius:10px;padding:3px 10px;display:inline-block;margin:3px">${esc(w)}</span>`).join('<span style="opacity:.5"> → </span>')
+        : '<span class="muted">The chain is empty — start with anything…</span>';
+      turnEl.textContent = myTurn() ? 'Your word 🔤' : `Waiting for ${esc(api.partnerName)}…`;
+      inEl.disabled = !myTurn();
+      addBtn.disabled = !myTurn();
+    }
+
+    function add() {
+      const v = inEl.value.trim();
+      if (!v || !myTurn()) return;
+      inEl.value = '';
+      S.chain.push(v);
+      S.turn ^= 1;
+      render();
+      api.send({ kind: 'add', text: v });
+    }
+    addBtn.onclick = add;
+    inEl.addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
+    root.querySelector('#wc-clear').onclick = () => {
+      S.chain = [];
+      S.turn = 0;
+      render();
+      api.send({ kind: 'clear' });
+    };
+
+    render();
+    return {
+      onMsg(d) {
+        if (d.kind === 'add') { S.chain.push(d.text); S.turn ^= 1; render(); }
+        else if (d.kind === 'clear') { S.chain = []; S.turn = 0; render(); }
+      },
+      destroy() {}
+    };
+  }
+};
+
+/* =====================================================
  * 6. Intimate (18+ — requires consent from BOTH partners)
  * ===================================================== */
 Games.intimate = {
