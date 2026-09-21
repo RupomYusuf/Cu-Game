@@ -1,5 +1,5 @@
 /* ============ App shell: lobby, menu, game lifecycle ============ */
-const APP_VERSION = '25'; // bump together with the ?v= in index.html
+const APP_VERSION = '27'; // bump together with the ?v= in index.html
 
 const App = (() => {
   const $ = sel => document.querySelector(sel);
@@ -215,6 +215,8 @@ const App = (() => {
       myName,
       partnerName,
       send: obj => Net.send({ t: 'state', g: id, ...obj }),
+      draw: (key, len) => { const i = Deck.draw(key, len); Net.send({ t: 'deck', key, i }); return i; },
+      drawLimited: (key, len, limit) => { const i = Deck.draw(key, len, limit); Net.send({ t: 'deck', key, i }); return i; },
       setScore: html => { $('#game-score').textContent = html; },
       toast,
     });
@@ -259,6 +261,9 @@ const App = (() => {
         }
         startGame(d.g);
         toast(`Playing ${Games[d.g].name}!`);
+        break;
+      case 'deck':
+        Deck.mark(d.key, d.i);
         break;
       case 'chat':
         chat.msgs.push({ name: d.name || partnerName, text: d.text });

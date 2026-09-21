@@ -253,7 +253,7 @@ Games.connect4 = {
 Games.cards = {
   name: 'Question Cards', icon: '💌', desc: 'Talk, laugh, connect',
   init(root, api) {
-    const S = { deck: 'warm', idx: 0 };
+    const S = { deck: 'warm', idx: 0, turn: 0 };
     root.innerHTML = `
       <div class="game-panel">
         <select id="cards-deck" class="btn btn-secondary" style="margin-bottom:18px"></select>
@@ -277,7 +277,7 @@ Games.cards = {
       const deck = DATA.decks[S.deck];
       const card = deck.cards[S.idx % deck.cards.length];
       // alternation is anchored to the host so both screens agree
-      const firstIsHost = S.idx % 2 === 0;
+      const firstIsHost = S.turn % 2 === 0;
       const asker = firstIsHost === api.isHost ? api.myName : api.partnerName;
       askerEl.textContent = `💕 ${asker} answers first`;
       textEl.textContent = card;
@@ -286,22 +286,24 @@ Games.cards = {
 
     deckSel.onchange = () => {
       S.deck = deckSel.value;
-      S.idx = 0;
+      S.idx = api.draw('cards-' + S.deck, DATA.decks[S.deck].cards.length);
+      S.turn = 0;
       show();
-      api.send({ kind: 'deck', deck: S.deck });
+      api.send({ kind: 'deck', deck: S.deck, idx: S.idx, turn: S.turn });
     };
 
     root.querySelector('#cards-next').onclick = () => {
-      S.idx++;
+      S.idx = api.draw('cards-' + S.deck, DATA.decks[S.deck].cards.length);
+      S.turn++;
       show();
-      api.send({ kind: 'next', idx: S.idx });
+      api.send({ kind: 'card', idx: S.idx, turn: S.turn });
     };
 
     show();
     return {
       onMsg(d) {
-        if (d.kind === 'next') { S.idx = d.idx; show(); }
-        else if (d.kind === 'deck') { S.deck = d.deck; S.idx = 0; show(); }
+        if (d.kind === 'card') { S.idx = d.idx; S.turn = d.turn; show(); }
+        else if (d.kind === 'deck') { S.deck = d.deck; S.idx = d.idx; S.turn = d.turn; show(); }
       },
       destroy() {}
     };
@@ -385,7 +387,7 @@ Games.likely = {
     }
 
     function next() {
-      S.q++;
+      S.q = api.draw('likely', DATA.likely.length);
       S.mine = null;
       S.theirs = null;
       resultEl.innerHTML = '';
@@ -496,7 +498,7 @@ Games.thisorthat = {
 
     nextBtn.onclick = () => {
       if (S.mine === null || S.theirs === null) return;
-      S.q++;
+      S.q = api.draw('tot', DATA.thisorthat.length);
       S.mine = null;
       S.theirs = null;
       resultEl.innerHTML = '';
@@ -585,7 +587,7 @@ Games.nhie = {
 
     nextBtn.onclick = () => {
       if (S.mine === null || S.theirs === null) return;
-      S.q++;
+      S.q = api.draw('nhie', DATA.nhie.length);
       S.mine = null;
       S.theirs = null;
       resultEl.innerHTML = '';
@@ -789,7 +791,7 @@ Games.guessmy = {
 
     nextBtn.onclick = () => {
       if (!(S.mine && S.theirs)) return;
-      S.q++;
+      S.q = api.draw('gma', DATA.guessmy.length);
       S.mine = null;
       S.theirs = null;
       revealEl.innerHTML = '';
@@ -1471,7 +1473,7 @@ Games.wyr = {
 
     nextBtn.onclick = () => {
       if (S.mine === null || S.theirs === null) return;
-      S.q++;
+      S.q = api.draw('wyr', DATA.wyr.length);
       S.mine = null; S.theirs = null;
       resultEl.innerHTML = ''; nextBtn.style.display = 'none';
       render();
@@ -1547,7 +1549,7 @@ Games.island = {
           : `<button class="btn btn-primary btn-big" id="di-submit" style="margin-top:14px" ${count === 3 ? '' : 'disabled'}>Lock in 3 🔒</button>`}`;
       if (revealed) {
         panel.querySelector('#di-next').onclick = () => {
-          S.sc++; S.mine = null; S.theirs = null;
+          S.sc = api.draw('island', DATA.islandScenarios.length); S.mine = null; S.theirs = null;
           render();
           api.send({ kind: 'next', sc: S.sc });
         };
@@ -1651,6 +1653,15 @@ Games.riddles = {
         revealEl.innerHTML = `<p class="game-prompt">Waiting for ${esc(api.partnerName)}…</p>`;
       }
     }
+
+    nextBtn.onclick = () => {
+      if (!(S.mine && S.theirs)) return;
+      S.q = api.draw('riddles', DATA.riddles.length);
+      S.mine = null; S.theirs = null; S.revealed = false;
+      revealEl.innerHTML = ''; nextBtn.style.display = 'none';
+      showForm(); render();
+      api.send({ kind: 'next', q: S.q });
+    };
 
     showForm();
     render();
@@ -1818,7 +1829,7 @@ Games.story = {
 Games.rush = {
   name: 'Word Rush', icon: '🔤', desc: 'Name it before the 8 seconds run out',
   init(root, api) {
-    const S = { cat: Math.floor(Math.random() * DATA.rush.length), turn: 0, score: { me: 0, them: 0 }, endAt: 0, iv: null };
+    const S = { cat: 0, turn: 0, score: { me: 0, them: 0 }, endAt: 0, iv: null };
     const myTurn = () => (S.turn === 0) === api.isHost;
 
     root.innerHTML = `<div class="game-panel" id="wr-area"></div>`;
@@ -1871,11 +1882,16 @@ Games.rush = {
     function nextTurn() {
       if (S.iv) { clearInterval(S.iv); S.iv = null; }
       S.turn ^= 1;
-      S.cat = Math.floor(Math.random() * DATA.rush.length);
+      S.cat = api.draw('rush', DATA.rush.length);
       render();
       api.send({ kind: 'turn', turn: S.turn, cat: S.cat, score: S.score });
     }
 
+    if (api.isHost) {
+      S.cat = api.draw('rush', DATA.rush.length);
+      render();
+      api.send({ kind: 'turn', turn: 0, cat: S.cat, score: S.score });
+    }
     render();
     return {
       onMsg(d) {
@@ -1903,6 +1919,7 @@ Games.intimate = {
       phase: 'select', // select | waiting | consent | play
       level: null,     // 'soft' | 'extreme'
       pending: null,
+      cardTurn: 0,
       mode: 'menu',    // menu | cards | dice | tod | timer | snaps | wheel | levels
       idx: 0,
       apart: true,     // playing from two different places (camera/snaps only)
@@ -2060,7 +2077,7 @@ Games.intimate = {
       const deck = L[S.level];
       const list = deck.cards.filter(c => !S.apart || !c.startsWith('🏠'));
       const card = list[S.idx % list.length];
-      const firstIsHost = S.idx % 2 === 0;
+      const firstIsHost = S.cardTurn % 2 === 0;
       const asker = firstIsHost === api.isHost ? api.myName : api.partnerName;
       panel.innerHTML = `
         <div><span class="card-tag">${esc(deck.name)} · card ${S.idx % list.length + 1}</span>
@@ -2071,9 +2088,10 @@ Games.intimate = {
           ${backBtn().outerHTML.replace('<button', '<button id="in-back"')}
         </div>`;
       panel.querySelector('#in-next').onclick = () => {
-        S.idx++;
+        S.idx = api.draw('icards-' + S.level, list.length);
+        S.cardTurn++;
         render();
-        api.send({ kind: 'next', idx: S.idx });
+        api.send({ kind: 'next', idx: S.idx, turn: S.cardTurn });
       };
       panel.querySelector('#in-back').onclick = () => toMode('menu');
     }
@@ -2094,7 +2112,8 @@ Games.intimate = {
         </div>`;
       panel.querySelector('#dice-back').onclick = () => toMode('menu');
       panel.querySelector('#dice-roll').onclick = () => {
-        const a = rnd(cfg.whats), ti = rnd(cfg.hows);
+        const pair = api.draw('dice-' + S.level, cfg.whats.length * cfg.hows.length);
+        const a = Math.floor(pair / cfg.hows.length), ti = pair % cfg.hows.length;
         animateDice(cfg, a, ti);
         api.send({ kind: 'dice', a, ti });
       };
@@ -2119,6 +2138,11 @@ Games.intimate = {
     }
 
     /* dare pool depends on apart/together mode */
+    function moodLimit() {
+      const pool = darePool();
+      return Math.max(3, Math.round(pool.length * Math.min(1, 0.4 + S.mood * 0.15)));
+    }
+
     function darePool() {
       const cfg = L[S.level];
       return S.apart ? cfg.daresApart : cfg.daresTogether;
@@ -2184,7 +2208,7 @@ Games.intimate = {
         panel.querySelector('#snap-back').onclick = () => toMode('menu');
         panel.querySelector('#snap-get').onclick = () => {
           const pool = snapPool();
-          S.snap = rnd(pool);
+          S.snap = api.draw('snaps-' + S.level, pool.length);
           S.snapText = pool[S.snap];
           S.snapWho = api.myName;
           render();
@@ -2231,7 +2255,7 @@ Games.intimate = {
           </div>`;
         panel.querySelector('#snap-new').onclick = () => {
           const pool = snapPool();
-          S.snap = rnd(pool);
+          S.snap = api.draw('snaps-' + S.level, pool.length);
           S.snapText = pool[S.snap];
           S.snapWho = api.myName;
           render();
@@ -2303,7 +2327,7 @@ Games.intimate = {
       const iMute = (S.wRound % 2 === 0) === api.isHost;
       if (S.wGuess === null && !S.wRevealed) {
         if (iMute) {
-          S.wPhrase = whisperList[S.wRound % whisperList.length];
+          S.wPhrase = whisperList[api.draw('whisper-' + S.level, whisperList.length)];
           const phrase = S.wPhrase;
           panel.innerHTML = `
             <h3 class="likely-question" style="font-size:1.6rem">Whisper Challenge 🤫</h3>
@@ -2434,7 +2458,7 @@ Games.intimate = {
       panel.querySelector('#wheel-spin').onclick = () => {
         if (spinning) return;
         spinning = true;
-        const i = rnd(cfg.wheel);
+        const i = api.draw('wheel-' + S.level, cfg.wheel.length);
         wheelSpinTo(i);
         api.send({ kind: 'spin', i });
         setTimeout(() => { spinning = false; }, 3300);
@@ -2519,7 +2543,7 @@ Games.intimate = {
           <p class="muted" style="margin-top:12px;font-size:.9rem">Kisses delivered so far: ${S.kisses} 💋</p>`;
         panel.querySelector('#kiss-back2').onclick = () => toMode('menu');
         panel.querySelector('#kiss-get').onclick = () => {
-          S.kiss = { i: rnd(cfg.kissStyles), end: Date.now() + 10000, iv: null };
+          S.kiss = { i: api.draw('kiss-' + S.level, cfg.kissStyles.length), end: Date.now() + 10000, iv: null };
           render();
           api.send({ kind: 'kiss', i: S.kiss.i });
         };
@@ -2569,7 +2593,7 @@ Games.intimate = {
         if (mine) {
           const pick = type => {
             const list = type === 'truth' ? cfg.truths : darePool();
-            const i = type === 'truth' ? rnd(list) : pickByMood(list);
+            const i = type === 'truth' ? api.draw('todt-' + S.level, cfg.truths.length) : api.drawLimited('todd-' + S.level + (S.apart ? '-a' : '-t'), darePool().length, moodLimit());
             S.mood++;
             S.tod.showing = { type, text: list[i] };
             render();
@@ -2614,7 +2638,7 @@ Games.intimate = {
         panel.querySelector('#timer-back3').onclick = () => toMode('menu');
         panel.querySelector('#timer-start').onclick = () => {
           const pool = darePool();
-          const i = pickByMood(pool);
+          const i = api.drawLimited('todd-' + S.level + (S.apart ? '-a' : '-t'), darePool().length, moodLimit());
           S.mood++;
           S.timer = { end: Date.now() + 60000, dare: pool[i], iv: null };
           render();
@@ -2660,7 +2684,7 @@ Games.intimate = {
             render();
             break;
           case 'next':
-            if (S.phase === 'play' && S.mode === 'cards') { S.idx = d.idx; render(); }
+            if (S.phase === 'play' && S.mode === 'cards') { S.idx = d.idx; S.cardTurn = d.turn || 0; render(); }
             break;
           case 'mode':
             if (S.phase === 'play') {
@@ -2801,7 +2825,7 @@ Games.draw = {
     function buildRoleUI() {
       resultEl.innerHTML = '';
       if (amDrawing()) {
-        S.word = DATA.words[Math.floor(Math.random() * DATA.words.length)];
+        S.word = DATA.words[api.draw('drawwords', DATA.words.length)];
         rolebar.innerHTML = `<div class="draw-word">${esc(S.word)}</div>
           <div class="game-prompt">Draw this! ✏️ ${esc(api.partnerName)} is guessing. <button class="btn btn-ghost btn-small" style="color:var(--rose-dark);border-color:var(--rose-light)" id="dr-newword">New word 🔄</button> <button class="btn btn-ghost btn-small" style="color:var(--rose-dark);border-color:var(--rose-light)" id="dr-giveup">Give up 🏳️</button></div>`;
         root.querySelector('#dr-newword').onclick = againNewWord;
@@ -2813,7 +2837,7 @@ Games.draw = {
     }
 
     function againNewWord() {
-      S.word = DATA.words[Math.floor(Math.random() * DATA.words.length)];
+      S.word = DATA.words[api.draw('drawwords', DATA.words.length)];
       api.send({ kind: 'newword' });
       sysMsg('New word chosen! 🔄');
     }
