@@ -1670,6 +1670,229 @@ Games.riddles = {
 };
 
 /* =====================================================
+ * 5n. Blind Countdown
+ * ===================================================== */
+Games.blindcount = {
+  name: 'Blind Countdown', icon: '⏱️', desc: 'Stop at exactly 10s — no peeking!',
+  init(root, api) {
+    const S = { phase: 'idle', startAt: 0, myMs: null, theirMs: null, score: { me: 0, them: 0 }, iv: null };
+    root.innerHTML = `<div class="game-panel" id="bc-area"></div>`;
+    const area = root.querySelector('#bc-area');
+
+    function render() {
+      if (S.iv) { clearInterval(S.iv); S.iv = null; }
+      if (S.phase === 'idle') {
+        area.innerHTML = `
+          <h3 class="likely-question" style="font-size:1.6rem">Blind Countdown ⏱️</h3>
+          <p class="game-prompt">The clock starts together — stop it as close to <b>10.00 seconds</b> as you can. No timer visible!</p>
+          <button class="btn btn-primary btn-big" id="bc-start">Start the countdown 🎲</button>`;
+        area.querySelector('#bc-start').onclick = () => {
+          S.startAt = Date.now() + 500;
+          S.phase = 'run';
+          S.myMs = null;
+          S.theirMs = null;
+          render();
+          api.send({ kind: 'start' });
+        };
+      } else if (S.phase === 'run') {
+        area.innerHTML = `
+          <h3 class="likely-question" style="font-size:1.6rem">Stop at 10s…</h3>
+          <div class="big-card-question" style="min-height:70px">⏱️ ???</div>
+          <button class="btn btn-primary btn-big" id="bc-stop">STOP!</button>`;
+        area.querySelector('#bc-stop').onclick = () => {
+          S.myMs = Math.max(0, Date.now() - S.startAt);
+          S.phase = 'wait';
+          render();
+          api.send({ kind: 'stop', ms: S.myMs });
+        };
+        S.iv = setInterval(() => {
+          if (S.phase !== 'run') return;
+          const el = Date.now() - S.startAt;
+          if (el > 16000) { // safety: auto-stop well past target
+            S.myMs = el;
+            S.phase = 'wait';
+            render();
+            api.send({ kind: 'stop', ms: S.myMs });
+          }
+        }, 200);
+      } else if (S.phase === 'wait') {
+        area.innerHTML = `<p class="game-prompt">Stopped at <b>${(S.myMs / 1000).toFixed(2)}s</b> — waiting for ${esc(api.partnerName)}…</p>`;
+      } else if (S.phase === 'result') {
+        const myDiff = Math.abs(S.myMs - 10000);
+        const theirDiff = Math.abs(S.theirMs - 10000);
+        let msg;
+        if (myDiff < theirDiff) { S.score.me++; msg = `<div class="result-banner win">You win! ${(S.myMs / 1000).toFixed(2)}s vs ${(S.theirMs / 1000).toFixed(2)}s ⏱️</div>`; }
+        else if (theirDiff < myDiff) { S.score.them++; msg = `<div class="result-banner lose">${esc(api.partnerName)} wins! ${(S.theirMs / 1000).toFixed(2)}s vs your ${(S.myMs / 1000).toFixed(2)}s</div>`; }
+        else msg = `<div class="result-banner draw">Identical timing! 🤝</div>`;
+        area.innerHTML = `
+          <h3 class="likely-question" style="font-size:1.6rem">Blind Countdown ⏱️</h3>
+          ${msg}
+          <button class="btn btn-primary" id="bc-next" style="margin-top:10px">Next round →</button>`;
+        api.setScore(`Rounds: ${S.score.me} — ${S.score.them}`);
+        area.querySelector('#bc-next').onclick = () => {
+          S.phase = 'idle';
+          S.myMs = null;
+          S.theirMs = null;
+          render();
+          api.send({ kind: 'next' });
+        };
+      }
+    }
+
+    render();
+    return {
+      onMsg(d) {
+        if (d.kind === 'start') { S.startAt = Date.now() + 500; S.phase = 'run'; S.myMs = null; S.theirMs = null; render(); }
+        else if (d.kind === 'stop') { S.theirMs = d.ms; if (S.myMs !== null) { S.phase = 'result'; render(); } }
+        else if (d.kind === 'next') { S.phase = 'idle'; S.myMs = null; S.theirMs = null; render(); }
+      },
+      destroy() { if (S.iv) clearInterval(S.iv); }
+    };
+  }
+};
+
+/* =====================================================
+ * 5o. Story Builder
+ * ===================================================== */
+Games.story = {
+  name: 'Story Builder', icon: '📖', desc: 'Write a story together, one line at a time',
+  init(root, api) {
+    const S = { lines: [], turn: 0 };
+    const myTurn = () => (S.turn === 0) === api.isHost;
+    root.innerHTML = `<div class="game-panel">
+      <div class="game-prompt">Take turns adding one line. See what your combined brain creates 📖</div>
+      <div class="turn-indicator" id="sb-turn"></div>
+      <div id="sb-story" style="text-align:left;max-width:460px;margin:0 auto;font-size:1.05rem;line-height:1.6;min-height:60px"></div>
+      <div id="sb-inputrow"></div>
+      <button class="btn btn-ghost btn-small" style="color:var(--rose-dark);border-color:var(--rose-light);margin-top:8px" id="sb-end">The End 🏁</button>
+    </div>`;
+    const turnEl = root.querySelector('#sb-turn');
+    const storyEl = root.querySelector('#sb-story');
+    const rowEl = root.querySelector('#sb-inputrow');
+
+    function render() {
+      storyEl.innerHTML = S.lines.length
+        ? S.lines.map((l, i) => `<p style="margin:6px 0"><small style="color:var(--muted)">${i + 1}.</small> ${esc(l)}</p>`).join('')
+        : '<p class="muted">Once upon a time… your turn to start!</p>';
+      turnEl.textContent = S.lines.length === 0 ? 'Anyone can start!' :
+        myTurn() ? 'Your line ✍️' : `Waiting for ${esc(api.partnerName)}…`;
+      rowEl.innerHTML = myTurn() ? `
+        <div class="chat-input-row" style="max-width:460px;margin:10px auto">
+          <input type="text" id="sb-in" maxlength="120" placeholder="And then…">
+          <button class="btn btn-primary" id="sb-add">Add</button>
+        </div>` : '';
+      if (myTurn()) {
+        const add = () => {
+          const v = rowEl.querySelector('#sb-in').value.trim();
+          if (!v) return;
+          S.lines.push(v);
+          S.turn ^= 1;
+          render();
+          api.send({ kind: 'add', text: v });
+        };
+        rowEl.querySelector('#sb-add').onclick = add;
+        rowEl.querySelector('#sb-in').addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
+      }
+    }
+
+    root.querySelector('#sb-end').onclick = () => {
+      S.lines.push('🏆 THE END — written by you two.');
+      S.turn = 0;
+      render();
+      api.send({ kind: 'add', text: '🏆 THE END — written by you two.' });
+    };
+
+    render();
+    return {
+      onMsg(d) {
+        if (d.kind === 'add') { S.lines.push(d.text); S.turn ^= 1; render(); }
+      },
+      destroy() {}
+    };
+  }
+};
+
+/* =====================================================
+ * 5p. Word Rush
+ * ===================================================== */
+Games.rush = {
+  name: 'Word Rush', icon: '🔤', desc: 'Name it before the 8 seconds run out',
+  init(root, api) {
+    const S = { cat: Math.floor(Math.random() * DATA.rush.length), turn: 0, score: { me: 0, them: 0 }, endAt: 0, iv: null };
+    const myTurn = () => (S.turn === 0) === api.isHost;
+
+    root.innerHTML = `<div class="game-panel" id="wr-area"></div>`;
+    const area = root.querySelector('#wr-area');
+
+    function render() {
+      if (S.iv) { clearInterval(S.iv); S.iv = null; }
+      const mine = myTurn();
+      area.innerHTML = `
+        <h3 class="likely-question" style="font-size:1.5rem">Word Rush 🔤</h3>
+        <p class="game-prompt">Category:</p>
+        <div class="likely-question" style="font-size:1.9rem">${esc(DATA.rush[S.cat])}</div>
+        <div class="draw-word" id="wr-count" style="font-size:2.2rem">8</div>
+        <p class="game-prompt">${mine ? 'Your turn — type anything that fits!' : `Waiting for ${esc(api.partnerName)}…`}</p>
+        <div id="wr-inputrow"></div>
+        <p class="muted" style="margin-top:10px">Words named: ${S.score.me} — ${S.score.them}</p>`;
+      if (mine) {
+        const row = area.querySelector('#wr-inputrow');
+        row.innerHTML = `
+          <div class="chat-input-row" style="max-width:420px;margin:0 auto">
+            <input type="text" id="wr-in" maxlength="40" placeholder="Type your word…">
+            <button class="btn btn-primary" id="wr-add">Go!</button>
+          </div>`;
+        const submit = () => {
+          const v = row.querySelector('#wr-in').value.trim();
+          if (!v) return;
+          S.score.me++;
+          nextTurn();
+        };
+        row.querySelector('#wr-add').onclick = submit;
+        row.querySelector('#wr-in').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+        row.querySelector('#wr-in').focus();
+      }
+      startTimer();
+    }
+
+    function startTimer() {
+      S.endAt = Date.now() + 8000;
+      S.iv = setInterval(() => {
+        const left = Math.max(0, Math.ceil((S.endAt - Date.now()) / 1000));
+        const el = area.querySelector('#wr-count');
+        if (el) el.textContent = left;
+        if (left <= 0) {
+          // only the current player's expiry passes the turn
+          if (myTurn()) nextTurn();
+        }
+      }, 250);
+    }
+
+    function nextTurn() {
+      if (S.iv) { clearInterval(S.iv); S.iv = null; }
+      S.turn ^= 1;
+      S.cat = Math.floor(Math.random() * DATA.rush.length);
+      render();
+      api.send({ kind: 'turn', turn: S.turn, cat: S.cat, score: S.score });
+    }
+
+    render();
+    return {
+      onMsg(d) {
+        if (d.kind === 'turn') {
+          if (S.iv) { clearInterval(S.iv); S.iv = null; }
+          S.turn = d.turn;
+          S.cat = d.cat;
+          if (d.score) S.score = { me: api.isHost ? d.score.me : d.score.them, them: api.isHost ? d.score.them : d.score.me };
+          render();
+        }
+      },
+      destroy() { if (S.iv) clearInterval(S.iv); }
+    };
+  }
+};
+
+/* =====================================================
  * 6. Intimate (18+ — requires consent from BOTH partners)
  * ===================================================== */
 Games.intimate = {
@@ -1689,6 +1912,9 @@ Games.intimate = {
       lv: 0,           // level-up progress
       deg: 0,          // accumulated wheel rotation
       kiss: null,      // { i, end, iv } current kiss-roulette round
+      serumFeed: [],   // truth serum Q&A
+      wRound: 0, wGuess: null, wPhrase: '', wRevealed: false, wVerdictOk: null,
+      wScore: { me: 0, them: 0 }, // whisper challenge
       kisses: 0,       // kiss tally
       mood: 0,         // rounds played — drives the warm -> intense curve
     };
@@ -1770,6 +1996,8 @@ Games.intimate = {
         else if (S.mode === 'wheel') renderWheel();
         else if (S.mode === 'levels') renderLevels();
         else if (S.mode === 'kiss') renderKiss();
+        else if (S.mode === 'serum') renderSerum();
+        else if (S.mode === 'whisper') renderWhisper();
       }
     }
 
@@ -1782,6 +2010,7 @@ Games.intimate = {
       S.snap = null;
       if (mode === 'tod' && !S.tod) S.tod = { turn: 0, showing: null, passes: { me: 0, them: 0 } };
       if (mode === 'levels') S.lv = 0;
+      if (mode === 'whisper') { S.wRound = 0; S.wGuess = null; S.wRevealed = false; S.wVerdictOk = null; }
       render();
       if (sync) api.send({ kind: 'mode', mode });
     }
@@ -1808,6 +2037,8 @@ Games.intimate = {
           <button class="game-card" data-mode="timer"><span class="gc-icon">⏱️</span><span class="gc-name">60-Second Challenge</span></button>
           <button class="game-card" data-mode="wheel"><span class="gc-icon">🎡</span><span class="gc-name">${S.level === 'extreme' ? 'Wheel of Fire' : 'Spin the Wheel'}</span></button>
           <button class="game-card" data-mode="kiss"><span class="gc-icon">💋</span><span class="gc-name">Kiss Roulette</span></button>
+          <button class="game-card" data-mode="serum"><span class="gc-icon">🧪</span><span class="gc-name">Truth Serum</span></button>
+          <button class="game-card" data-mode="whisper"><span class="gc-icon">🤫</span><span class="gc-name">Whisper Challenge</span></button>
           ${S.level === 'extreme' ? '<button class="game-card" data-mode="levels"><span class="gc-icon">🏆</span><span class="gc-name">Level Up</span></button>' : ''}
         </div>
         <div style="margin-top:16px">
@@ -2010,6 +2241,152 @@ Games.intimate = {
       }
     }
 
+
+    /* ---------- truth serum ---------- */
+    function renderSerum() {
+      const last = S.serumFeed[S.serumFeed.length - 1];
+      const needAns = last && last.k === 'q';
+      const feedHtml = S.serumFeed.length ? S.serumFeed.map(f =>
+        f.k === 'q'
+          ? `<p style="margin:8px 0"><b>🧪 ${esc(f.by)} asks:</b> ${esc(f.text)}</p>`
+          : `<p style="margin:8px 0;padding-left:16px">💬 <i>${esc(f.text)}</i></p>`
+      ).join('') : '<p class="muted" style="font-size:.9rem">Ask anything — the other one MUST answer truthfully. No skipping! 🧪</p>';
+      panel.innerHTML = `
+        <h3 class="likely-question" style="font-size:1.6rem">Truth Serum 🧪</h3>
+        <div class="chat-log" id="ts-feed" style="height:230px">${feedHtml}</div>
+        <div id="ts-row"></div>
+        <div style="margin-top:10px">${backBtn().outerHTML.replace('<button', '<button id="ts-back"')}</div>`;
+      panel.querySelector('#ts-back').onclick = () => toMode('menu');
+      const feedEl = panel.querySelector('#ts-feed');
+      feedEl.scrollTop = feedEl.scrollHeight;
+      const row = panel.querySelector('#ts-row');
+      if (needAns) {
+        const iAnswer = last.by !== api.myName;
+        row.innerHTML = iAnswer ? `
+          <div class="chat-input-row" style="margin-top:8px">
+            <input type="text" id="ts-ans" maxlength="200" placeholder="Your truthful answer…">
+            <button class="btn btn-primary" id="ts-ansbtn">Answer 💬</button>
+          </div>` : `<p class="muted" style="margin-top:8px">Waiting for the truth…</p>`;
+        if (iAnswer) {
+          const ans = () => {
+            const v = row.querySelector('#ts-ans').value.trim();
+            if (!v) return;
+            S.serumFeed.push({ k: 'a', text: v });
+            render();
+            api.send({ kind: 'sa', text: v });
+          };
+          row.querySelector('#ts-ansbtn').onclick = ans;
+          row.querySelector('#ts-ans').addEventListener('keydown', e => { if (e.key === 'Enter') ans(); });
+        }
+      } else {
+        row.innerHTML = `
+          <div class="chat-input-row" style="margin-top:8px">
+            <input type="text" id="ts-q" maxlength="150" placeholder="Ask anything — they must answer…">
+            <button class="btn btn-primary" id="ts-qbtn">Ask 🧪</button>
+          </div>`;
+        const ask = () => {
+          const v = row.querySelector('#ts-q').value.trim();
+          if (!v) return;
+          S.serumFeed.push({ k: 'q', by: api.myName, text: v });
+          render();
+          api.send({ kind: 'sq', text: v });
+        };
+        row.querySelector('#ts-qbtn').onclick = ask;
+        row.querySelector('#ts-q').addEventListener('keydown', e => { if (e.key === 'Enter') ask(); });
+      }
+    }
+
+    /* ---------- whisper challenge ---------- */
+    function renderWhisper() {
+      const cfg = L[S.level];
+      const whisperList = DATA.whisper[S.level];
+      const iMute = (S.wRound % 2 === 0) === api.isHost;
+      if (S.wGuess === null && !S.wRevealed) {
+        if (iMute) {
+          S.wPhrase = whisperList[S.wRound % whisperList.length];
+          const phrase = S.wPhrase;
+          panel.innerHTML = `
+            <h3 class="likely-question" style="font-size:1.6rem">Whisper Challenge 🤫</h3>
+            <p class="game-prompt">Mute your mic! Mouth this phrase clearly on camera — ${esc(api.partnerName)} reads your lips:</p>
+            <div class="big-card-question" style="min-height:70px">“${esc(phrase)}”</div>
+            <p class="muted" style="font-size:.85rem;margin-top:10px">Their typed guess will appear here for you to judge.</p>
+            <div id="wv-row"></div>`;
+        } else {
+          panel.innerHTML = `
+            <h3 class="likely-question" style="font-size:1.6rem">Whisper Challenge 🤫</h3>
+            <p class="game-prompt">${esc(api.partnerName)} is mouthing a phrase (mic muted!). Read their lips and type what you see:</p>
+            <div class="chat-input-row" style="max-width:420px;margin:10px auto">
+              <input type="text" id="wv-guess" maxlength="80" placeholder="I think they're saying…">
+              <button class="btn btn-primary" id="wv-guessbtn">Guess 🤫</button>
+            </div>
+            <p class="muted" style="font-size:.85rem">Score: you ${S.wScore.me} — ${S.wScore.them} ${esc(api.partnerName)}</p>
+            <div style="margin-top:10px">${backBtn().outerHTML.replace('<button', '<button id="wv-back"')}</div>`;
+          panel.querySelector('#wv-back').onclick = () => toMode('menu');
+          const guess = () => {
+            const v = panel.querySelector('#wv-guess').value.trim();
+            if (!v) return;
+            S.wGuess = v;
+            render();
+            api.send({ kind: 'wg', text: v });
+          };
+          panel.querySelector('#wv-guessbtn').onclick = guess;
+          panel.querySelector('#wv-guess').addEventListener('keydown', e => { if (e.key === 'Enter') guess(); });
+        }
+      } else if (S.wGuess !== null && !S.wRevealed) {
+        if (iMute) {
+          panel.innerHTML = `
+            <h3 class="likely-question" style="font-size:1.6rem">Whisper Challenge 🤫</h3>
+            <p class="game-prompt">Their guess: <b>“${esc(S.wGuess)}”</b></p>
+            <p class="game-prompt">The phrase was: <b>“${esc(S.wPhrase)}”</b></p>
+            <div class="likely-buttons" style="margin-top:14px">
+              <button class="likely-btn match" id="wv-ok" style="font-size:1.1rem">Correct! 🎉</button>
+              <button class="likely-btn" id="wv-no" style="font-size:1.1rem">Wrong! 🙃</button>
+            </div>
+            <div style="margin-top:10px">${backBtn().outerHTML.replace('<button', '<button id="wv-back2"')}</div>`;
+          panel.querySelector('#wv-back2').onclick = () => toMode('menu');
+          panel.querySelector('#wv-ok').onclick = () => verdict(true);
+          panel.querySelector('#wv-no').onclick = () => verdict(false);
+        } else {
+          panel.innerHTML = `<p class="game-prompt">Guess sent — waiting for the verdict…🤞</p>
+            <div style="margin-top:10px">${backBtn().outerHTML.replace('<button', '<button id="wv-back3"')}</div>`;
+          panel.querySelector('#wv-back3').onclick = () => toMode('menu');
+        }
+      } else {
+        const ok = S.wVerdictOk;
+        if (iMute) {
+          S.wScore.them += ok ? 1 : 0;
+          panel.innerHTML = `
+            <div class="result-banner ${ok ? 'lose' : 'win'}">${ok ? `${esc(api.partnerName)} guessed it! Point for them 🎉` : 'They got it wrong! Point for you 🕵️'}</div>
+            <p class="game-prompt">Score: you ${S.wScore.them} — ${S.wScore.me} ${esc(api.partnerName)}</p>
+            <button class="btn btn-primary" id="wv-next" style="margin-top:10px">Next phrase →</button>
+            <div style="margin-top:8px">${backBtn().outerHTML.replace('<button', '<button id="wv-back4"')}</div>`;
+        } else {
+          S.wScore.me += ok ? 1 : 0;
+          panel.innerHTML = `
+            <div class="result-banner ${ok ? 'win' : 'lose'}">${ok ? `You guessed it! 🎉` : `So close — the phrase was “${esc(S.wPhrase)}”`}</div>
+            <p class="game-prompt">Score: you ${S.wScore.me} — ${S.wScore.them} ${esc(api.partnerName)}</p>
+            <button class="btn btn-primary" id="wv-next" style="margin-top:10px">Next phrase →</button>
+            <div style="margin-top:8px">${backBtn().outerHTML.replace('<button', '<button id="wv-back4"')}</div>`;
+        }
+        panel.querySelector('#wv-next').onclick = () => {
+          S.wRound++;
+          S.wGuess = null;
+          S.wRevealed = false;
+          S.wVerdictOk = null;
+          render();
+          api.send({ kind: 'wround', r: S.wRound });
+        };
+        panel.querySelector('#wv-back4').onclick = () => toMode('menu');
+      }
+
+      function verdict(ok) {
+        S.wVerdictOk = ok;
+        S.wRevealed = true;
+        if (ok) S.wScore.them++;
+        render();
+        api.send({ kind: 'wv', ok, phrase: S.wPhrase });
+      }
+    }
     /* ---------- spin the wheel / wheel of fire ---------- */
     function renderWheel() {
       const cfg = L[S.level];
@@ -2313,6 +2690,21 @@ Games.intimate = {
               if (S.kiss && S.kiss.iv) { clearInterval(S.kiss.iv); S.kiss.iv = null; }
               render();
             }
+            break;
+          case 'sq':
+            if (S.phase === 'play' && S.mode === 'serum') { S.serumFeed.push({ k: 'q', by: api.partnerName, text: d.text }); render(); }
+            break;
+          case 'sa':
+            if (S.phase === 'play' && S.mode === 'serum') { S.serumFeed.push({ k: 'a', text: d.text }); render(); }
+            break;
+          case 'wg':
+            if (S.phase === 'play' && S.mode === 'whisper') { S.wGuess = d.text; render(); }
+            break;
+          case 'wv':
+            if (S.phase === 'play' && S.mode === 'whisper') { S.wVerdictOk = d.ok; S.wRevealed = true; S.wPhrase = d.phrase || S.wPhrase; if (d.ok) S.wScore.them++; render(); }
+            break;
+          case 'wround':
+            if (S.phase === 'play' && S.mode === 'whisper') { S.wRound = d.r; S.wGuess = null; S.wRevealed = false; S.wVerdictOk = null; render(); }
             break;
           case 'apart':
             if (S.phase === 'play') {

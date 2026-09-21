@@ -538,3 +538,30 @@ DATA.riddles = [
   { e: "❄️👸", a: "snow queen" },
   { e: "🔥🚒", a: "fire truck" },
 ];
+
+/* --- Word Rush categories --- */
+DATA.rush = [
+  'Ways to say I love you', 'Breakfast foods', 'Things in this room', 'Movie titles',
+  'Types of hugs', 'Holiday traditions', 'Things that are cold', 'Famous couples',
+  'Farm animals', 'Pizza toppings', 'Date ideas', 'Things that make you laugh',
+];
+
+/* --- Whisper Challenge phrases --- */
+DATA.whisper = {
+  soft: [
+    "You're cute when you're sleepy", "Send me a song right now", "Let's get ice cream at midnight",
+    "I had a dream about you", "Your laugh is my favorite sound", "Movie night and blankets tonight",
+    "I bet you can't guess this", "You owe me a hug", "Plan a surprise for me",
+    "I'm thinking about our first date", "You make ordinary days special", "Bring me coffee in the morning",
+    "Let's watch the stars tonight", "I'll cook, you clean", "Dance with me in the kitchen",
+    "I picked this one just for you",
+  ],
+  extreme: [
+    "Meet me in the bedroom later", "Lights off, curtains open", "I'm not wearing what you think",
+    "You, me, no phones tonight", "That thing you did last night — again", "Kiss me like last Friday",
+    "I've been thinking about you all day", "Tonight, I'm in charge", "Your side of the bed is cold",
+    "Let's skip the movie tonight", "I bought something for you to take off", "The shower is big enough for two",
+    "I want your full attention tonight", "You'll find out when you get here", "Close the door when you come in",
+    "No peeking until I say so",
+  ],
+};

@@ -1,0 +1,133 @@
+
+    /* ---------- truth serum ---------- */
+    function renderSerum() {
+      const last = S.serumFeed[S.serumFeed.length - 1];
+      const needAns = last && last.k === 'q';
+      const feedHtml = S.serumFeed.length ? S.serumFeed.map(f =>
+        f.k === 'q'
+          ? `<p style="margin:8px 0"><b>🧪 ${esc(f.by)} asks:</b> ${esc(f.text)}</p>`
+          : `<p style="margin:8px 0;padding-left:16px">💬 <i>${esc(f.text)}</i></p>`
+      ).join('') : '<p class="muted" style="font-size:.9rem">Ask anything — the other one MUST answer truthfully. No skipping! 🧪</p>';
+      panel.innerHTML = `
+        <h3 class="likely-question" style="font-size:1.6rem">Truth Serum 🧪</h3>
+        <div class="chat-log" id="ts-feed" style="height:230px">${feedHtml}</div>
+        <div id="ts-row"></div>`;
+      const feedEl = panel.querySelector('#ts-feed');
+      feedEl.scrollTop = feedEl.scrollHeight;
+      const row = panel.querySelector('#ts-row');
+      if (needAns) {
+        const iAnswer = last.by !== api.myName;
+        row.innerHTML = iAnswer ? `
+          <div class="chat-input-row" style="margin-top:8px">
+            <input type="text" id="ts-ans" maxlength="200" placeholder="Your truthful answer…">
+            <button class="btn btn-primary" id="ts-ansbtn">Answer 💬</button>
+          </div>` : `<p class="muted" style="margin-top:8px">Waiting for the truth…</p>`;
+        if (iAnswer) {
+          const ans = () => {
+            const v = row.querySelector('#ts-ans').value.trim();
+            if (!v) return;
+            S.serumFeed.push({ k: 'a', text: v });
+            render();
+            api.send({ kind: 'sa', text: v });
+          };
+          row.querySelector('#ts-ansbtn').onclick = ans;
+          row.querySelector('#ts-ans').addEventListener('keydown', e => { if (e.key === 'Enter') ans(); });
+        }
+      } else {
+        row.innerHTML = `
+          <div class="chat-input-row" style="margin-top:8px">
+            <input type="text" id="ts-q" maxlength="150" placeholder="Ask anything — they must answer…">
+            <button class="btn btn-primary" id="ts-qbtn">Ask 🧪</button>
+          </div>`;
+        const ask = () => {
+          const v = row.querySelector('#ts-q').value.trim();
+          if (!v) return;
+          S.serumFeed.push({ k: 'q', by: api.myName, text: v });
+          render();
+          api.send({ kind: 'sq', text: v });
+        };
+        row.querySelector('#ts-qbtn').onclick = ask;
+        row.querySelector('#ts-q').addEventListener('keydown', e => { if (e.key === 'Enter') ask(); });
+      }
+    }
+
+    /* ---------- whisper challenge ---------- */
+    function renderWhisper() {
+      const cfg = L[S.level];
+      const iMute = (S.wRound % 2 === 0) === api.isHost;
+      if (S.wGuess === null && !S.wRevealed) {
+        if (iMute) {
+          const phrase = cfg.whisper[S.wRound % cfg.whisper.length];
+          panel.innerHTML = `
+            <h3 class="likely-question" style="font-size:1.6rem">Whisper Challenge 🤫</h3>
+            <p class="game-prompt">Mute your mic! Mouth this phrase clearly on camera — ${esc(api.partnerName)} reads your lips:</p>
+            <div class="big-card-question" style="min-height:70px">“${esc(phrase)}”</div>
+            <p class="muted" style="font-size:.85rem;margin-top:10px">Their typed guess will appear here for you to judge.</p>
+            <div id="wv-row"></div>`;
+        } else {
+          panel.innerHTML = `
+            <h3 class="likely-question" style="font-size:1.6rem">Whisper Challenge 🤫</h3>
+            <p class="game-prompt">${esc(api.partnerName)} is mouthing a phrase (mic muted!). Read their lips and type what you see:</p>
+            <div class="chat-input-row" style="max-width:420px;margin:10px auto">
+              <input type="text" id="wv-guess" maxlength="80" placeholder="I think they're saying…">
+              <button class="btn btn-primary" id="wv-guessbtn">Guess 🤫</button>
+            </div>
+            <p class="muted" style="font-size:.85rem">Score: you ${S.wScore.me} — ${S.wScore.them} ${esc(api.partnerName)}</p>`;
+          const guess = () => {
+            const v = panel.querySelector('#wv-guess').value.trim();
+            if (!v) return;
+            S.wGuess = v;
+            render();
+            api.send({ kind: 'wg', text: v });
+          };
+          panel.querySelector('#wv-guessbtn').onclick = guess;
+          panel.querySelector('#wv-guess').addEventListener('keydown', e => { if (e.key === 'Enter') guess(); });
+        }
+      } else if (S.wGuess !== null && !S.wRevealed) {
+        if (iMute) {
+          panel.innerHTML = `
+            <h3 class="likely-question" style="font-size:1.6rem">Whisper Challenge 🤫</h3>
+            <p class="game-prompt">Their guess: <b>“${esc(S.wGuess)}”</b></p>
+            <p class="game-prompt">The phrase was: <b>“${esc(S.wPhrase)}”</b></p>
+            <div class="likely-buttons" style="margin-top:14px">
+              <button class="likely-btn match" id="wv-ok" style="font-size:1.1rem">Correct! 🎉</button>
+              <button class="likely-btn" id="wv-no" style="font-size:1.1rem">Wrong! 🙃</button>
+            </div>`;
+          panel.querySelector('#wv-ok').onclick = () => verdict(true);
+          panel.querySelector('#wv-no').onclick = () => verdict(false);
+        } else {
+          panel.innerHTML = `<p class="game-prompt">Guess sent — waiting for the verdict…🤞</p>`;
+        }
+      } else {
+        const ok = S.wVerdictOk;
+        if (iMute) {
+          S.wScore.them += ok ? 1 : 0;
+          panel.innerHTML = `
+            <div class="result-banner ${ok ? 'lose' : 'win'}">${ok ? `${esc(api.partnerName)} guessed it! Point for them 🎉` : 'They got it wrong! Point for you 🕵️'}</div>
+            <p class="game-prompt">Score: you ${S.wScore.them} — ${S.wScore.me} ${esc(api.partnerName)}</p>
+            <button class="btn btn-primary" id="wv-next" style="margin-top:10px">Next phrase →</button>`;
+        } else {
+          S.wScore.me += ok ? 1 : 0;
+          panel.innerHTML = `
+            <div class="result-banner ${ok ? 'win' : 'lose'}">${ok ? `You guessed it! 🎉` : `So close — the phrase was “${esc(S.wPhrase)}”`}</div>
+            <p class="game-prompt">Score: you ${S.wScore.me} — ${S.wScore.them} ${esc(api.partnerName)}</p>
+            <button class="btn btn-primary" id="wv-next" style="margin-top:10px">Next phrase →</button>`;
+        }
+        panel.querySelector('#wv-next').onclick = () => {
+          S.wRound++;
+          S.wGuess = null;
+          S.wRevealed = false;
+          S.wVerdictOk = null;
+          render();
+          api.send({ kind: 'wround', r: S.wRound });
+        };
+      }
+
+      function verdict(ok) {
+        S.wVerdictOk = ok;
+        S.wRevealed = true;
+        if (ok) S.wScore.them++;
+        render();
+        api.send({ kind: 'wv', ok });
+      }
+    }
