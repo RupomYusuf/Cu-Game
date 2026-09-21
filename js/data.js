@@ -565,3 +565,519 @@ DATA.whisper = {
     "No peeking until I say so",
   ],
 };
+
+
+/* =====================================================
+ * CONTENT EXPANSION PACK — hundreds of extra cards
+ * ===================================================== */
+
+// Who's More Likely: 40 -> 100
+DATA.likely.push(
+  "…plan a surprise birthday party for the other?", "…become a famous chef overnight?",
+  "…win a Nobel prize?", "…go viral for something silly?", "…run a marathon with zero training?",
+  "…become a stand-up comedian?", "…survive a zombie apocalypse?", "…forget their own birthday?",
+  "…adopt ten cats?", "…eat weird food from street stalls?", "…get a matching tattoo on impulse?",
+  "…serenade the other in public?", "…become a billionaire by accident?", "…be late to their own wedding?",
+  "…propose in a super cheesy way?", "…save a stranger's life without thinking?", "…become president?",
+  "…laugh so hard they snort?", "…fall asleep during a romantic dinner?", "…reply with only emojis all day?",
+  "…become a fitness influencer?", "…go bungee jumping on a whim?", "…wear a full costume for fun?",
+  "…start a scrapbook of our memories?", "…write a love song about us?", "…give up coffee for a month?",
+  "…spend all day at a museum?", "…get lost in their own city?", "…bring home a stray puppy?",
+  "…become a farmer?", "…play the villain in a movie?", "…win a dance competition?",
+  "…forget to eat while absorbed in a hobby?", "…take a spontaneous midnight road trip?",
+  "…become a professional photographer?", "…make friends with a pigeon?", "…spend hours choosing an outfit?",
+  "…start a podcast about us?", "…cry at a wedding?", "…become a yoga guru?", "…join a flash mob?",
+  "…paint the whole house a crazy color?", "…sneak snacks into the cinema?", "…say 'I told you so' after being right?",
+  "…plan an elaborate scavenger hunt for the other?", "…learn a fancy dish just to impress?",
+  "…camp under the stars willingly?", "…win a staring contest?", "…become a superhero's sidekick?",
+  "…adopt a weird pet like a lizard?", "…be genuinely thrilled by stationery as a gift?",
+  "…burst into song in the middle of a task?", "…become the fun parent?", "…forgive but never forget?",
+  "…move furniture at midnight because of an idea?", "…learn the other's language in secret?",
+  "…become a lottery-winning disaster?", "…open a tiny café together?", "…get recognized for something silly?",
+  "…cry from a thoughtful gift?"
+);
+
+// This or That: 30 -> 75
+DATA.thisorthat.push(
+  ["Morning texts", "Goodnight calls"], ["Home-cooked meal", "Fancy restaurant"],
+  ["Surprise party", "Quiet celebration"], ["Sharing dessert", "Ordering two"],
+  ["Handwritten letter", "Voice recording"], ["Matching pajamas", "Cozy socks"],
+  ["City break", "Beach resort"], ["Netflix binge", "Stargazing"],
+  ["Pancakes in bed", "Champagne at midnight"], ["Silly photos", "Perfect selfies"],
+  ["Holding hands", "Arms around waist"], ["Inside jokes", "Deep conversations"],
+  ["Fireplace", "Fairy lights"], ["Snow day indoors", "Summer day outdoors"],
+  ["Picnic", "Rooftop dinner"], ["Love notes", "Daily compliments"],
+  ["Breakfast dates", "Midnight drives"], ["Camping", "Glamping"],
+  ["Handmade gift", "Expensive gift"], ["Love at first sight", "Slow burn love"],
+  ["Serenade", "Poem"], ["Cook together", "Bake together"],
+  ["Sunrise hike", "Sunset drive"], ["Nap together", "Stargaze together"],
+  ["Surprise kiss", "Surprise gift"], ["Road trip playlist", "Quiet drive"],
+  ["Amusement park", "Zoo"], ["Boat ride", "Train ride"],
+  ["Backyard movie", "Cozy fort"], ["Recreate first date", "Start a new tradition"],
+  ["Concert", "Theater play"], ["Winter cabin", "Summer villa"],
+  ["Sharing a milkshake", "Sharing popcorn"], ["Duet", "Slow dance"],
+  ["Write a book together", "Start a business together"], ["Adopt a pet", "Travel the world first"],
+  ["Cinema", "Home cinema"], ["Salty", "Sweet"],
+  ["Balcony breakfast", "Garden dinner"], ["Karaoke", "Board games"], ["Early flight", "Late train"],
+  ["Umbrella for two", "One raincoat"], ["Old soul", "Young heart"],
+  ["Chocolate", "Flowers"], ["Comedy night", "Music night"]
+);
+
+// Never Have I Ever: 30 -> 80
+DATA.nhie.push(
+  "…written my name with a heart next to yours 💘", "…pretended to be cold just to hold your hand 🥶",
+  "…googled 'how to be romantic' 🔍", "…saved your photo as my wallpaper within a week of dating 📱",
+  "…daydreamed about our wedding 🧸", "…told my friends you're 'the one' 🤫",
+  "…cried reading old messages 💬", "…kept a movie ticket from our first date 🎟️",
+  "…taken a sneaky photo of you sleeping 😴", "…practiced dancing to our song 💃",
+  "…burned dinner trying to impress you 🍳", "…invented an excuse just to see you 👀",
+  "…written a text at 3am and deleted it 🌙", "…kept a flower from a date pressed in a book 🌸",
+  "…bragged about your cooking 🍝", "…stolen your hoodie and never given it back 🧥",
+  "…imagined introducing you to my grandma 👵", "…laughed alone remembering something you said 😂",
+  "…planned our honeymoon before getting engaged 🏝️", "…saved the last bite for you 🍰",
+  "…worn matching outfits on purpose 👕", "…kept a list of gift ideas for you 🎁",
+  "…waited in the rain just to see you 🌧️", "…made a playlist for you 🎶",
+  "…written our names inside a heart ❤️", "…told a stranger how amazing you are 😊",
+  "…canceled plans to spend time with you 💞", "…memorized your coffee order ☕",
+  "…stolen fries off your plate 🍟", "…kept a diary entry about you 📖",
+  "…hidden a love note for you to find 💌", "…sung a duet alone pretending you were there 🎤",
+  "…chosen a restaurant just because you'd like it 🍽️", "…fallen for you again on an ordinary day ✨",
+  "…kept a running list of our inside jokes 😆", "…thought about you during a sunset 🌅",
+  "…saved a dessert 'for us' and eaten it alone 🧁", "…picked a movie because you'd like it 🎬",
+  "…rehearsed a romantic line in the mirror 🪞", "…kept your texts unread to savor them later 📥",
+  "…made a wish on a star about us 🌠", "…given you the bigger half of everything 🍕",
+  "…planned your birthday gift a year ahead 🎂", "…told my family we're endgame 💍",
+  "…loved you more than I showed ❤️", "…winked at you from across a crowded room 😉",
+  "…saved your voicemail just to hear your voice 🎧", "…faked being asleep to avoid getting up 😇",
+  "…learned your favorite song on an instrument 🎹", "…picked a restaurant by its dessert menu 🍮"
+);
+
+// Guess My Answer: 24 -> 60
+DATA.guessmy.push(
+  "What's my favorite movie genre?", "Sweet or savory — what do I crave?",
+  "What's my ideal weekend: busy or lazy?", "What's my shoe size?",
+  "Am I an early bird or a night owl?", "What's my favorite season?",
+  "What would I never eat?", "What's my favorite flower?",
+  "Who's my celebrity crush?", "What's my favorite ice cream flavor?",
+  "Beach or pool — what would I pick?", "What's my biggest talent?",
+  "What's my favorite board game?", "Am I a planner or spontaneous?",
+  "What's my favorite restaurant?", "Do I snore? 😴",
+  "What's my phone wallpaper right now?", "What's my most-used emoji?",
+  "What's my favorite holiday?", "What's my favorite pizza topping?",
+  "What would I grab first in a store?", "What's my favorite color?",
+  "How do I like my eggs?", "What's my least favorite chore?",
+  "What's my dream car?", "Do I sing in the shower?",
+  "What's my favorite dessert?", "What's my favorite city?",
+  "Books or movies — what would I pick?", "What's my comfort movie?",
+  "What's my dream job?", "What's the first thing I noticed about you?",
+  "How many close friends do I really have?", "What's my signature dish?",
+  "What always makes me laugh?", "What's my favorite way to spend a rainy day?"
+);
+
+// Would You Rather: 20 -> 40
+DATA.wyr.push(
+  ["Have a personal chef", "Have a personal driver"], ["Never wait in line again", "Never do laundry again"],
+  ["Live in a treehouse", "Live in an underwater hotel"], ["Be able to fly", "Be invisible"],
+  ["Unlimited books", "Unlimited travel"], ["Always be brutally honest", "Always be diplomatic"],
+  ["Meet your great-great-grandkids", "Meet your great-great-grandparents"], ["Talk to animals", "Speak every language"],
+  ["Have a perfect memory", "Have perfect intuition"], ["Live one life of 100 years", "Ten lives of 10 years"],
+  ["Own a boat", "Own a cabin"], ["Be a famous singer", "Be a famous writer"],
+  ["Have wings", "Have a mermaid tail"], ["Only celebrate birthdays", "Only celebrate anniversaries"],
+  ["Eat breakfast for dinner", "Eat dinner for breakfast"], ["Be a movie villain", "Be the hero's best friend"],
+  ["A pause button for arguments", "A replay button for memories"], ["Find your soulmate early", "Find them late but with perfect timing"],
+  ["A portrait painted of us", "A song written about us"], ["Explore a castle", "Explore a rainforest"]
+);
+
+// Word Rush: 12 -> 40 categories
+DATA.rush.push(
+  "Things you'd find in a grandma's purse", "Karaoke songs", "Excuses to skip a party",
+  "Things that are harder than they look", "Ice cream flavors", "Things that smell amazing",
+  "Worst fashion trends", "Reasons to be late", "Things you shouldn't Google",
+  "Carnival games", "Supermarket sections", "Things that are overrated",
+  "Things that are underrated", "First-date nerves", "Things couples argue about",
+  "Romantic movie clichés", "Animals that would make terrible pets", "Weird phobias",
+  "Things that make great gifts", "Ways to say sorry", "Things that belong in a time capsule",
+  "Things you'd teach a parrot", "Perfect rainy-day activities", "Things that are impossible to do quietly",
+  "Best smells in the world", "Foods you eat with your hands", "Things worth waiting for",
+  "Things that remind you of childhood"
+);
+
+// Emoji Riddles: 15 -> 34
+DATA.riddles.push(
+  { e: "🐺🌕", a: "werewolf" }, { e: "🦇👨", a: "batman" }, { e: "🐌📮", a: "snail mail" },
+  { e: "🍔👑", a: "burger king" }, { e: "🎩🐇", a: "magic trick" }, { e: "🦷🧚", a: "tooth fairy" },
+  { e: "🍬🕺", a: "candy man" }, { e: "🍌📞", a: "banana phone" }, { e: "🌲🏠", a: "treehouse" },
+  { e: "🐝🎬", a: "bee movie" }, { e: "🧊🗿", a: "ice sculpture" }, { e: "🌠🙏", a: "wish upon a star" },
+  { e: "🐸☔", a: "frog weather" }, { e: "🧀🌕", a: "cheese moon" }, { e: "🍿🎬👥", a: "movie night" },
+  { e: "🕊️💌", a: "love letter" }, { e: "🌹🌹🌹", a: "roses" }, { e: "⛪💍", a: "wedding" },
+  { e: "🎹🎉", a: "piano party" }, { e: "🍓💋", a: "strawberry kiss" }
+);
+
+// Desert Island: 5 -> 15 scenarios
+DATA.islandScenarios.push(
+  "Trapped in an elevator for 24 hours 🛗", "Stuck at the airport overnight ✈️",
+  "A week at grandma's house 👵", "Surviving a zombie apocalypse 🧟",
+  "Living on a space station 🚀", "Shipwrecked with only one crate 📦",
+  "A tiny house in the woods 🌲", "The last day on Earth 🌍",
+  "A hot air balloon for a week 🎈", "Your very own private island 🏝️"
+);
+
+// Draw & Guess: ~75 -> 150 words
+DATA.words.push(
+  "mermaid", "treasure map", "unicorn", "hot air balloon", "camera", "windmill", "meteor",
+  "hedgehog", "roller coaster", "trombone", "wheelbarrow", "hammock", "sundial", "jellyfish",
+  "origami", "kaleidoscope", "hang glider", "gnome", "yo-yo", "seesaw", "wind chime", "carousel",
+  "scarecrow", "hourglass", "comet", "parachute", "ladder", "magnet", "robot", "cactus", "fountain",
+  "polaroid", "boombox", "zeppelin", "campfire", "igloo", "surfboard", "knitting", "swings",
+  "dragonfly", "puzzle piece", "hug from behind", "ring hunt", "wedding cake", "hotel breakfast",
+  "airport goodbye", "slow dance", "shared umbrella", "surprise visit", "pillow fort",
+  "koala", "toucan", "flamingo", "chameleon", "walrus", "meerkat", "peacock", "otter",
+  "wind surfer", "skateboard", "trampoline", "microscope", "telescope", "submarine", "helicopter",
+  "greenhouse", "lighthouse", "wind turbine", "ice rink", "trapeze", "tug of war", "pillow fight",
+  "food fight", "sleepover", "stargazing", "sunbathing", "sightseeing", "juggling", "yodeling"
+);
+
+// Question Cards: warm 15->40
+DATA.decks.warm.cards.push(
+  "What's the silliest thing we've argued about?", "What do you think is my cutest habit?",
+  "If you could rename me, what would you call me?", "What smell reminds you of our first kiss?",
+  "What's the best surprise you could wake up to?", "Which of my quirks would you miss most?",
+  "What's our best photo together and why?", "What meal would you want me to learn to cook?",
+  "Where would you love to fall asleep next to me?", "What's our song and when do you hear it?",
+  "What little gift would make you smile for a week?", "What's your favorite photo of us?",
+  "What do you want us to do every single year?", "What's the sweetest text I ever sent you?",
+  "If today were our last day together, what would you want to do?",
+  "What's your favorite place to be kissed besides the lips?",
+  "What game do you never get tired of playing with me?", "What was your favorite date we ever had?",
+  "What do you want to show me from your childhood?", "What's something we should do more often?",
+  "When do you feel proudest of me?", "What nickname do you wish I'd call you?",
+  "What's the coziest memory you have of us?", "What should we collect together as a couple?",
+  "What's your dream home feature — pool, library, or garden?"
+);
+
+// Question Cards: deep 18->40
+DATA.decks.deep.cards.push(
+  "What's a boundary you need me to respect more?", "What does feeling safe mean to you?",
+  "What's the nicest thing anyone ever did for you?", "When was the last time you surprised yourself?",
+  "What do you need more of from the people you love?", "What do you hope I never stop doing?",
+  "What's a mistake you're grateful you made?", "What do you want to be remembered for?",
+  "What's something you forgive yourself for?", "Who shaped the way you love?",
+  "What's a dream you gave up that still whispers to you?", "What part of your day do you dread — and why?",
+  "What would you do if you knew you couldn't fail?", "What makes you feel truly appreciated?",
+  "What's the bravest thing you've ever done?", "What tradition from your childhood do you want to keep?",
+  "How can I make your hard days softer?", "What's a belief you've changed your mind about?",
+  "What role does love play in your life right now?", "What do you wish people understood about you?",
+  "What's your definition of a successful life?", "What do you do to heal when you're hurting?"
+);
+
+// Question Cards: playful 14->30
+DATA.decks.playful.cards.push(
+  "Dare: speak only in questions for the next three minutes.", "Truth: what's your worst romance-red flag?",
+  "Dare: imitate how I laugh until I actually laugh.", "Truth: what's the most you've spent on a date?",
+  "Dare: let me style your hair however I want.", "Truth: what app do you waste the most time on?",
+  "Dare: write me a haiku about my feet.", "Truth: what's the pettiest reason you've liked someone?",
+  "Dare: give a TED talk about cereal for one minute.", "Truth: what rumor about you would you start yourself?",
+  "Dare: swap phones and read each other's last photo.", "Truth: what's the strangest compliment you've received?",
+  "Dare: let me choose your profile picture for a day.", "Truth: what would your emoji biography be called?",
+  "Dare: announce everything you do for the next minute like a sports commentator.",
+  "Truth: which of my friends would you swap lives with for a day?"
+);
+
+// Intimate — Intimate 💋 level content
+DATA.intimate.soft.snaps.push(
+  "Selfie with the sunset behind you 🌅", "Blow a kiss in slow motion 🎞️",
+  "Snap your favorite mug with a heart drawn on it ☕", "The book you're reading — plus why 📚",
+  "Your happiest expression today 😄", "A snap of something that reminded you of me 🧡",
+  "Your favorite spot in your home 🏠", "Dressed up for a night out — sneak preview 👔",
+  "A polaroid-style selfie with the date written on it 📅", "Snap the dessert you wish we were sharing 🧁",
+  "Your hand holding an invisible heart 🫶", "A shy smile — the one you do when flustered ☺️",
+  "Snap your 'thinking of you' face 🤔💭", "The first thing you see when you wake up 🛏️",
+  "Your walk-right-now — mid-stride shot 🚶", "Selfie with your pet or a stuffed animal 🧸",
+  "A snap of the sky right now ☁️", "Your cozy blanket nest 🛋️",
+  "Something that smells amazing near you 🌸", "Your favorite pair of socks — own it 🧦",
+  "Mid-laugh candid 😂", "Snap the last drink you'd share with me 🥤",
+  "Your selfie with the ugliest-but-cutest filter 🐶", "A photo of two things that go together like us 🥜🥜",
+  "Your 'good morning, handsome/beautiful' face ☀️", "A snap of the moon or stars tonight 🌙",
+  "The view from your window right now 🪟", "Your favorite chair, mission: look regal 👑",
+  "Snap something tiny that you love 🔍", "A photo of your handwriting saying my name ✍️",
+  "Recreate a celebrity couple pose with an invisible partner 📸", "Your best hair-day selfie 💁"
+);
+DATA.intimate.soft.dice.whats.push(
+  'Blow three little kisses to', 'Wink slowly at', 'Say one thing you adore about', 'Trace a heart for', 'Send a flying hug to', 'Whisper a sweet nothing about'
+);
+DATA.intimate.soft.dice.hows.push('with your eyes closed', 'in slow motion', 'with a big smile', 'twice', 'like it is a secret', 'very gently', 'then blush', 'and hold the pose');
+DATA.intimate.soft.truths.push(
+  "What's the most romantic thing you've ever imagined us doing?",
+  "When was the moment you knew this was something special?",
+  "What's a compliment you wish I gave you more?",
+  "What's your favorite physical feature of mine — and your second?",
+  "What song would be playing in the movie scene of our love story?",
+  "Where's one place you've always wanted to be kissed but haven't told me?",
+  "What's something romantic you've never had the courage to do?",
+  "Which of my compliments do you replay in your head?",
+  "What's the most affectionate thing you want more of from me?",
+  "What does a perfect morning after a perfect night look like for us?",
+  "What did you tell your friends about our first kiss?",
+  "What's one romantic movie scene you want us to recreate?",
+  "When do you feel the most connected to me?",
+  "What's a small gesture that melts you every time?",
+  "What do you daydream about when you miss me?",
+  "What's your favorite memory of us under the stars?",
+  "How do you want to be woken up tomorrow?",
+  "What's one thing you'd whisper to me in a crowd?",
+  "Where would you take me if you had to impress me all over again?",
+  "What's something sweet you've never had the nerve to say?"
+);
+DATA.intimate.soft.daresApart.push(
+  "Kiss the camera at the exact moment I say stop — 15 seconds.",
+  "Describe your favorite photo of us like it's a masterpiece in a museum.",
+  "Give me a 20-second 'I'm so happy you exist' speech.",
+  "Recreate our first text conversation out loud, both voices and all.",
+  "Sing the chorus of our song to the camera.",
+  "Blow a kiss so slow the camera can barely keep up.",
+  "Tell me three things you'd whisper to me on a first date.",
+  "Make the face you make when I catch you staring at me.",
+  "Whisper 'I choose you' in the softest voice you have.",
+  "Reenact the moment you realized you liked me — as a monologue.",
+  "Give the camera the smile you save only for me.",
+  "Trace the shape of my name on your lips.",
+  "Say the sweetest thing you can think of, then do it again in a whisper.",
+  "Describe the perfect slow dance with me — song, place, and everything.",
+  "Look into the camera and say exactly why you fell for me."
+);
+DATA.intimate.soft.daresTogether.push(
+  "Forehead kisses only for the next ten minutes.",
+  "Hold eye contact for one full minute — no laughing.",
+  "Let me pick the music and dance however it moves us.",
+  "Whisper one thing you've never said out loud, then kiss me.",
+  "Slow dance in the kitchen while something bakes.",
+  "Trade massages for ten minutes each — no skipping spots.",
+  "Give me three compliments: one about my mind, one about my heart, one about my face."
+);
+DATA.intimate.soft.cards.push(
+  "What's the most romantic thing that has ever happened to you?",
+  "Where would you love to be kissed but haven't told me?",
+  "What song instantly makes you think of me?",
+  "If we renewed our vows every year, what would yours be this year?",
+  "What's your favorite way to be woken up?",
+  "When you imagine our future home, what does it sound like?",
+  "What's something I do in public that makes you proud?",
+  "What was going through your mind during our first dance?",
+  "What's a small thing I do that feels huge to you?",
+  "How would you spend a rainy day with me if we had nowhere to be?",
+  "What's the most thoughtful surprise you could imagine receiving?",
+  "Which moment of us would you frame and hang on the wall?",
+  "What do you love about how we fight and make up?",
+  "What's a tradition from your family you want in our future?",
+  "When did you last feel proud to introduce me to someone?",
+  "What's the silliest thing that made you fall for me a little more?",
+  "What would your perfect anniversary look like from morning to night?",
+  "What's a place you want us to kiss at least once?",
+  "How has loving me changed how you love yourself?",
+  "What's your favorite sleepy-time cuddle position and why?",
+  "What secret talent would you perform for me on a desert island?",
+  "What's one smell that instantly reminds you of us?",
+  "If our love were a flavor, what would it taste like?",
+  "What's one question you've always wanted to ask me but haven't?"
+);
+DATA.intimate.soft.kissStyles.push(
+  "The hand-kiss, then the lip-kiss combo", "The forehead kiss that lingers",
+  "The butterfly kiss — eyelashes only", "The Eskimo kiss, noses first",
+  "The kissing countdown — 5, 4, 3, 2, 1", "The left cheek, right cheek, lips routine",
+  "The interrupted kiss — pull away at the last second", "The humming kiss — hum while you kiss"
+);
+DATA.intimate.soft.wheel.push(
+  "Blow three kisses: one slow, one silly, one deadly serious",
+  "Say the alphabet backward while holding my gaze on camera",
+  "Give a 20-second speech about my best feature",
+  "Kiss the camera like it's freezing outside and I'm warm",
+  "Describe our dream home in five details",
+  "Sing the first line of 'our song'",
+  "Whisper the naughtiest compliment you can invent",
+  "Do your slowest, most dramatic wink",
+  "Tell me the exact moment you knew you liked me",
+  "Give me a virtual hug and describe how tight it is",
+  "Say 'I choose you' with full eye contact",
+  "Name three things on your body that belong to me",
+  "Draw a heart on your palm and show it",
+  "Do your 'I miss you' face for ten seconds",
+  "Reenact the way you'd greet me at the airport"
+);
+DATA.whisper.soft.push(...[
+  "Meet me at our favorite café after work", "I saved you the last slice", "Wear that blue shirt tomorrow",
+  "Our spot at sunset, an hour from now", "You looked at me first, remember?", "Bring chocolate, I had a day",
+  "Let's plan a weekend just for us", "I put a note in your coat pocket", "Tonight, phones off at eight",
+  "I want to hear everything about your day", "Slow dance with me after dinner", "I framed our photo",
+  "Come over — I made your favorite", "You're my favorite hello", "I kept a seat for you next to me",
+  "Let's be tourists in our own city",
+]);
+DATA.whisper.extreme.push(...[
+  "The wait will be worth it, I promise", "I've been restless thinking about you", "Lock the door behind you",
+  "Wear the thing I love", "I have a plan, trust me", "Lights low when you arrive", "I counted the hours today",
+  "Don't keep me waiting tonight", "I have two surprises and one blindfold", "Tonight we start with dessert",
+  "I cleared my whole evening for us", "You'll be speechless by midnight", "I wrote a list. It's naughty.",
+  "Come closer — I mean it", "No interruptions until morning", "I need you closer than close",
+]);
+
+// Intimate — Extremely Intimate 🔥 level content
+DATA.intimate.extreme.snaps.push(
+  "Your favorite angle of yourself — the one only I usually see 📸", "Getting-ready shot: halfway there 🖤",
+  "The outfit you'd wear to drive me crazy 👠", "A snap from the floor, looking up. Confidence required 😈",
+  "Your 'come to bed' text energy in one photo 🛏️", "Something lacy, something daring — your call 🔥",
+  "A close-up that leaves the rest to imagination 🌙", "The mirror shot with the best view 🪞",
+  "Your hands doing something suggestive — tastefully 😏", "The back view. All of it, or your version of it 🌚",
+  "Post-shower hair, no filter 🚿", "The 'I'm waiting' pose 😌", "Shadow play on bare skin 🖤",
+  "A kiss mark where you'd want mine 💋", "Silhouette in the doorway, backlit 🌗",
+  "That one outfit that's basically a suggestion 👙", "A photo taken mid-gasp 😮",
+  "Your interpretation of 'undressed but artistic' 🎨", "Bedhead and bare shoulders 🌅",
+  "The view I'd have if I woke up next to you ☀️", "A snap of the playlist for tonight 🎶",
+  "Something off — one strap, one hint 💫", "Your 'last warning' face before trouble 😈",
+  "The corner of the bed in low light 🕯️", "Just the outline of a plan 🌚",
+  "Where my name would look good written on you ✍️", "Your most confident smirk after dark 🌆",
+  "Between the sheets, camera included 📱", "The 'I behaved all day' reward pose 🍬",
+  "Whatever 'I miss you' looks like on your body right now 💭", "Your call — full creative control, total trust 🔥"
+);
+DATA.intimate.extreme.truths.push(
+  "What's something you want to try with me that we haven't yet?",
+  "Where in the house have you thought about kissing me?",
+  "What's the most spontaneous thing you'd let me do to you?",
+  "What compliment about your body do you want me to repeat more?",
+  "What does your ideal slow morning with me look like?",
+  "What's a fantasy you've hinted at but never fully explained?",
+  "What's the boldest place you'd want us to disappear to together?",
+  "What sound of mine is your favorite — and why?",
+  "What's one thing I do that you think about at random moments?",
+  "If we wrote our own rules for tonight, what would rule one be?",
+  "What's something you want me to say more often?",
+  "What memory of us makes you smile in a not-so-innocent way?",
+  "What would your perfect 'us' evening look like, hour by hour?",
+  "Where do you love being touched that I always underestimate?",
+  "What's the most romantic reckless thing you'd do for us?",
+  "What do you find irresistible that you think is silly?",
+  "When do you feel the most wanted by me?",
+  "What's your favorite way for a kiss to end?",
+  "What kind of teasing works best on you?",
+  "What's one night from our past you'd relive exactly as it happened?",
+  "What would you wear — or not wear — if I chose for you?",
+  "What do you think about when you can't sleep next to me?",
+  "What's your favorite thing about how we touch?",
+  "What would make you feel worshipped tomorrow?",
+  "If tonight had a theme song, what would it be?",
+  "What's the smallest gesture that turns your whole day around?",
+  "What do you want me to whisper in your ear next time?",
+  "What's a boundary you're proud you communicated?",
+  "When was the last time you felt truly adored by me?",
+  "What does intimacy mean to you beyond the physical?"
+);
+DATA.intimate.extreme.daresApart.push(
+  "Slowly undo one button on camera. Then decide how far to go.",
+  "Describe your favorite memory of us under the covers — every detail.",
+  "Give the camera the look you give me right before a kiss.",
+  "Trace with one finger where you want my hands, top to bottom.",
+  "Whisper my name three ways: sweet, teasing, and desperate.",
+  "Take off one item and describe where it lands.",
+  "Show me your favorite spot to be kissed — spend a full minute there.",
+  "Turn the lights off and let the sound tell me everything.",
+  "Reenact our first kiss on camera, but slower.",
+  "Tell me exactly what you're wearing to bed. Then change it.",
+  "Give a 30-second tour of where you want tonight to go.",
+  "Bite your lip, say my name, and end the video there.",
+  "Describe what you'd whisper to me if I were falling asleep beside you.",
+  "One minute: talk to the camera like it's my neck.",
+  "Show me the outfit you'd wear to make me forget my own name.",
+  "Reveal the first thing you'd take off if I were there.",
+  "Send a voice note of every sound I love hearing from you.",
+  "Describe your favorite part of my body using only compliments.",
+  "Kiss the camera from my lips down as far as you dare.",
+  "Tell me the exact moment tonight you'll think of me.",
+  "Give me the look that means 'come over' — hold it.",
+  "Dance for one song with the lights low.",
+  "Describe the last time we were close — from your favorite angle.",
+  "Whisper what you'd do first, second, and third if I walked in.",
+  "Show me where my name would look best written on you.",
+  "Send the look that always works on you. You know the one.",
+  "Tell me a fantasy in exactly one sentence — the boldest one.",
+  "Let the camera wander where you wish my hands were. Slowly.",
+  "Say what you're feeling right now in three words, then explain with your eyes.",
+  "Do your best 'I'm not wearing a plan tonight' impression."
+);
+DATA.intimate.extreme.daresTogether.push(
+  "Blindfold me and retrace our first kiss — from the door.",
+  "I pick the playlist; you pick what comes off between songs.",
+  "Whisper what you want for ten minutes before anything happens.",
+  "Let me kiss you everywhere except where you want most. Then decide.",
+  "Trade massages where the tension is — everywhere counts.",
+  "Swap roles: I do the thing you always do, you do mine.",
+  "Kiss me until one of us forgets what this dare was.",
+  "One minute of teasing, one of tenderness. Repeat for ten minutes.",
+  "Recreate our most passionate moment, but in slow motion.",
+  "Let me guide your hands anywhere. No questions allowed.",
+  "Dance until only one of us is wearing something. Then stop dancing.",
+  "Say 'I want you' in five different ways without repeating a word."
+);
+DATA.intimate.extreme.cards.push(
+  "What's something you want from me that you've never had the courage to request?",
+  "Describe the exact moment tonight you'd want to relive forever.",
+  "What's a place in our home that's underrated for kissing?",
+  "When have you felt the most desired — and what made it that way?",
+  "What would you whisper if I promised no one would ever know?",
+  "What's your favorite thing about how we touch without thinking?",
+  "Where would you love a kiss that isn't on the lips?",
+  "What's a look you've given me that you hoped I'd act on?",
+  "What does feeling wanted mean to you, specifically?",
+  "What's the most memorable thing I've ever done for you in the dark?",
+  "How do you want to be woken up on a special morning?",
+  "What's the sexiest sentence anyone could say to you?",
+  "What do you hope I think about when we're apart?",
+  "What's one way we could make ordinary nights feel electric?",
+  "What part of our intimacy would you write a poem about?",
+  "What's something you'd like us to practice until we're perfect?",
+  "What's your favorite kind of anticipation?",
+  "What would a perfect 'just us' holiday look like?",
+  "What do you love that we've never said out loud?",
+  "Where would you take me if you had one night and no limits on planning?",
+  "What's the boldest compliment you've ever given me?",
+  "What moment with me do you wish you could slow down?",
+  "What's your favorite memory of us laughing in the dark?",
+  "What does 'coming home to each other' mean to you?",
+  "What would you teach me if you were patient and I was brave?",
+  "What's a look or gesture that always works on you?",
+  "What do you want more of in our intimate life — more of what exactly?",
+  "When did you last feel like the luckiest person in the room?",
+  "What's something about us you'd never change?",
+  "If we made a movie of our best night, what scene would open it?"
+);
+DATA.intimate.extreme.kissStyles.push(
+  "The kiss that starts soft and ends anywhere",
+  "The corner-of-the-mouth kiss first, then real",
+  "The slow motion kiss — every millimeter",
+  "The kiss with an audible breath after",
+  "The surprise kiss from behind",
+  "The kiss that trails and comes back",
+  "The 'one more' that becomes ten more",
+  "The kiss you give to win an argument",
+  "The whisper-into-kiss transition",
+  "The kiss that says sorry before you finish",
+  "The kiss on the edge of a smile",
+  "The goodnight kiss that isn't goodnight",
+  "The kiss you give when you're proud of them",
+  "The kiss interrupted by laughter, resumed anyway",
+  "The kiss that makes the neighbors jealous"
+);
+DATA.intimate.extreme.wheel.push(
+  "One item of clothing, off — chosen by me, removed by you",
+  "Kiss the camera like my neck for thirty seconds",
+  "Describe your fantasy in one unbroken minute",
+  "Show me the look that means 'now'",
+  "Trace where you want to be touched. All of it.",
+  "Say my name the way you say it when it's just us",
+  "One moan. My name somewhere in it.",
+  "Kiss downward from the camera as far as you dare",
+  "Tell me the naughtiest thought you had today",
+  "Give me a private show to one song — my pick next time",
+  "Whisper exactly how you want tonight to begin",
+  "Dance with the lights low and no instructions",
+  "Say three things you'd do to me, in order",
+  "Kiss the camera until one of us breaks",
+  "Let the camera follow wherever your hands wander"
+);
