@@ -1420,6 +1420,256 @@ Games.wordchain = {
 };
 
 /* =====================================================
+ * 5k. Would You Rather
+ * ===================================================== */
+Games.wyr = {
+  name: 'Would You Rather', icon: '🔀', desc: 'Impossible choices — together',
+  init(root, api) {
+    const S = { q: 0, mine: null, theirs: null, same: 0, rounds: 0 };
+    root.innerHTML = `
+      <div class="game-panel">
+        <div class="likely-question" id="wyr-q" style="font-size:1.7rem">Would you rather…</div>
+        <div class="likely-buttons" id="wyr-buttons"></div>
+        <div id="wyr-result"></div>
+        <div style="margin-top:12px"><button class="btn btn-primary" id="wyr-next" style="display:none">Next →</button></div>
+      </div>`;
+    const qEl = root.querySelector('#wyr-q');
+    const btnsEl = root.querySelector('#wyr-buttons');
+    const resultEl = root.querySelector('#wyr-result');
+    const nextBtn = root.querySelector('#wyr-next');
+
+    function render() {
+      const pair = DATA.wyr[S.q % DATA.wyr.length];
+      qEl.textContent = 'Would you rather…';
+      btnsEl.innerHTML = '';
+      const revealed = S.mine !== null && S.theirs !== null;
+      pair.forEach((label, i) => {
+        const b = document.createElement('button');
+        b.className = 'likely-btn';
+        b.style.cssText = 'font-weight:400;font-size:1.05rem;min-height:80px';
+        b.textContent = label;
+        if (revealed) {
+          b.disabled = true;
+          if (S.mine === i) b.classList.add('selected');
+          if (S.mine === S.theirs && S.mine === i) b.classList.add('match');
+        } else {
+          if (S.mine === i) b.classList.add('selected');
+          b.onclick = () => { S.mine = i; render(); api.send({ kind: 'pick', pick: i }); };
+        }
+        btnsEl.appendChild(b);
+      });
+      if (revealed) {
+        resultEl.innerHTML = S.mine === S.theirs
+          ? `<div class="result-banner win">Same choice! 💞 Great minds.</div>`
+          : `<div class="result-banner lose">Different! Defend your choice 😄</div>`;
+        nextBtn.style.display = 'inline-block';
+        api.setScore(`Same choice: ${S.same}/${S.rounds}`);
+      } else if (S.mine !== null) {
+        resultEl.innerHTML = `<p class="game-prompt">Waiting for ${esc(api.partnerName)}…</p>`;
+      }
+    }
+
+    nextBtn.onclick = () => {
+      if (S.mine === null || S.theirs === null) return;
+      S.q++;
+      S.mine = null; S.theirs = null;
+      resultEl.innerHTML = ''; nextBtn.style.display = 'none';
+      render();
+      api.send({ kind: 'next', q: S.q });
+    };
+
+    render();
+    return {
+      onMsg(d) {
+        if (d.kind === 'pick' && S.theirs === null) {
+          S.theirs = d.pick; S.rounds++;
+          if (S.mine !== null && S.mine === S.theirs) S.same++;
+          render();
+        } else if (d.kind === 'next') {
+          S.q = d.q; S.mine = null; S.theirs = null;
+          resultEl.innerHTML = ''; nextBtn.style.display = 'none';
+          render();
+        }
+      },
+      destroy() {}
+    };
+  }
+};
+
+/* =====================================================
+ * 5l. Desert Island
+ * ===================================================== */
+Games.island = {
+  name: 'Desert Island', icon: '🏝️', desc: 'Pick 3 items — think alike?',
+  init(root, api) {
+    const S = { sc: 0, mine: null, theirs: null, sub: false };
+    root.innerHTML = `<div class="game-panel" id="di-panel"></div>`;
+    const panel = root.querySelector('#di-panel');
+
+    function render() {
+      panel.innerHTML = '';
+      const scenario = DATA.islandScenarios[S.sc % DATA.islandScenarios.length];
+      const revealed = S.sub && S.theirs !== null;
+      const mine = S.mine || Array(DATA.islandItems.length).fill(false);
+      const theirs = S.theirs || Array(DATA.islandItems.length).fill(false);
+      const count = mine.filter(Boolean).length;
+      let overlapHtml = '';
+      if (revealed) {
+        let overlap = 0;
+        const rows = DATA.islandItems.map((item, i) => {
+          if (mine[i] && theirs[i]) { overlap++; return `<p style="margin:4px 0">⭐ <b>${esc(item)}</b> — you both picked it!</p>`; }
+          if (mine[i]) return `<p style="margin:4px 0">🙋 ${esc(item)} <small style="color:var(--muted)">(only you)</small></p>`;
+          if (theirs[i]) return `<p style="margin:4px 0">💗 ${esc(item)} <small style="color:var(--muted)">(only ${esc(api.partnerName)})</small></p>`;
+          return '';
+        }).join('');
+        overlapHtml = `
+          <div class="result-banner ${overlap >= 3 ? 'win' : overlap >= 1 ? 'draw' : 'lose'}">
+            ${overlap} item${overlap === 1 ? '' : 's'} in common ${overlap >= 3 ? '— soulmates of survival! 💞' : overlap >= 1 ? '— decent teamwork 😄' : '— good luck surviving 😅'}
+          </div>${rows}`;
+      }
+      panel.innerHTML = `
+        <h3 class="likely-question" style="font-size:1.6rem">${esc(scenario)}</h3>
+        <p class="game-prompt">Pick exactly 3 things to bring. ${revealed ? 'The results:' : S.theirs !== null ? `${esc(api.partnerName)} locked in their 3 — now you!` : `Choose wisely — ${count}/3 picked`}</p>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-width:460px;margin:0 auto">
+          ${DATA.islandItems.map((item, i) => {
+            const sel = revealed ? false : mine[i];
+            const both = revealed && mine[i] && theirs[i];
+            const mineOnly = revealed && mine[i] && !theirs[i];
+            const theirsOnly = revealed && theirs[i] && !mine[i];
+            return `<button class="likely-btn ${sel && !revealed ? 'selected' : ''}" data-i="${i}" ${revealed || (!sel && count >= 3) ? 'disabled' : ''}
+              style="font-weight:400;font-size:.95rem;padding:10px 6px;${both ? 'background:#d9f2e3;border-color:var(--good)' : mineOnly || theirsOnly ? 'background:var(--rose-light);border-color:var(--rose)' : ''}">
+              ${both ? '⭐ ' : mineOnly || theirsOnly ? '✓ ' : ''}${esc(item)}</button>`;
+          }).join('')}
+        </div>
+        ${overlapHtml}
+        ${revealed
+          ? `<button class="btn btn-primary" id="di-next" style="margin-top:14px">Next scenario →</button>`
+          : `<button class="btn btn-primary btn-big" id="di-submit" style="margin-top:14px" ${count === 3 ? '' : 'disabled'}>Lock in 3 🔒</button>`}`;
+      if (revealed) {
+        panel.querySelector('#di-next').onclick = () => {
+          S.sc++; S.mine = null; S.theirs = null;
+          render();
+          api.send({ kind: 'next', sc: S.sc });
+        };
+      } else {
+        panel.querySelectorAll('.likely-btn').forEach(b => {
+          b.onclick = () => {
+            const i = +b.dataset.i;
+            S.mine = S.mine || Array(DATA.islandItems.length).fill(false);
+            S.mine[i] = !S.mine[i];
+            render();
+          };
+        });
+        panel.querySelector('#di-submit').onclick = () => {
+          S.sub = true;
+          render();
+          api.send({ kind: 'pick', items: S.mine });
+        };
+      }
+      api.setScore('');
+    }
+
+    render();
+    return {
+      onMsg(d) {
+        if (d.kind === 'pick') {
+          // partner submitted first — hold it; reveal only once I submit too
+          S.theirs = d.items;
+          render();
+        } else if (d.kind === 'next') {
+          S.sc = d.sc; S.mine = null; S.theirs = null; S.sub = false;
+          render();
+        }
+      },
+      destroy() {}
+    };
+  }
+};
+
+/* =====================================================
+ * 5m. Emoji Riddles
+ * ===================================================== */
+Games.riddles = {
+  name: 'Emoji Riddles', icon: '🧩', desc: 'Decode the emoji word',
+  init(root, api) {
+    const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const S = { q: 0, mine: null, theirs: null, revealed: false, right: { me: 0, them: 0 } };
+    root.innerHTML = `
+      <div class="game-panel">
+        <div class="game-prompt">What word do these emojis make? Both type a guess, then reveal!</div>
+        <div id="rd-emoji" style="font-size:4rem;margin:10px 0"></div>
+        <div id="rd-form"></div>
+        <div id="rd-reveal"></div>
+        <div style="margin-top:12px"><button class="btn btn-primary" id="rd-next" style="display:none">Next riddle →</button></div>
+      </div>`;
+    const emojiEl = root.querySelector('#rd-emoji');
+    const formEl = root.querySelector('#rd-form');
+    const revealEl = root.querySelector('#rd-reveal');
+    const nextBtn = root.querySelector('#rd-next');
+
+    function wire() {
+      const btn = formEl.querySelector('#rd-send');
+      if (!btn) return;
+      btn.onclick = () => {
+        const v = formEl.querySelector('#rd-in').value.trim();
+        if (!v) return;
+        S.mine = v;
+        formEl.innerHTML = `<p class="game-prompt">Guess saved — waiting for ${esc(api.partnerName)}…</p>`;
+        render();
+        api.send({ kind: 'guess', guess: v });
+      };
+    }
+
+    function showForm() {
+      formEl.innerHTML = `
+        <input type="text" id="rd-in" maxlength="40" placeholder="Your guess…" style="text-align:left">
+        <button class="btn btn-primary" id="rd-send" style="margin-top:10px">Lock guess 🔒</button>`;
+      wire();
+    }
+
+    function render() {
+      const r = DATA.riddles[S.q % DATA.riddles.length];
+      emojiEl.textContent = r.e;
+      if (S.revealed) {
+        const iRight = norm(S.mine) === norm(r.a);
+        const tRight = norm(S.theirs) === norm(r.a);
+        if (iRight) S.right.me++;
+        if (tRight) S.right.them++;
+        revealEl.innerHTML = `
+          <div class="result-banner win">The answer: <b>${esc(r.a)}</b></div>
+          <p style="margin:8px 0">${iRight ? '✅' : '❌'} You: ${esc(S.mine)} &nbsp; ${tRight ? '✅' : '❌'} ${esc(api.partnerName)}: ${esc(S.theirs)}</p>`;
+        nextBtn.style.display = 'inline-block';
+        api.setScore(`Solved: ${S.right.me} — ${S.right.them}`);
+      } else if (S.mine && S.theirs) {
+        revealEl.innerHTML = `<button class="btn btn-primary btn-big" id="rd-open">Reveal answer 🔓</button>`;
+        revealEl.querySelector('#rd-open').onclick = () => {
+          S.revealed = true;
+          render();
+          api.send({ kind: 'reveal' });
+        };
+      } else if (S.mine) {
+        revealEl.innerHTML = `<p class="game-prompt">Waiting for ${esc(api.partnerName)}…</p>`;
+      }
+    }
+
+    showForm();
+    render();
+    return {
+      onMsg(d) {
+        if (d.kind === 'guess' && !S.theirs) { S.theirs = d.guess; render(); }
+        else if (d.kind === 'reveal') { S.revealed = true; render(); }
+        else if (d.kind === 'next') {
+          S.q = d.q; S.mine = null; S.theirs = null; S.revealed = false;
+          revealEl.innerHTML = ''; nextBtn.style.display = 'none';
+          showForm(); render();
+        }
+      },
+      destroy() {}
+    };
+  }
+};
+
+/* =====================================================
  * 6. Intimate (18+ — requires consent from BOTH partners)
  * ===================================================== */
 Games.intimate = {

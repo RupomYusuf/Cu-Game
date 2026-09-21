@@ -485,3 +485,56 @@ DATA.finish = [
   "Our home will always have ___",
   "When I can't sleep, I ___",
 ];
+
+/* --- Would You Rather --- */
+DATA.wyr = [
+  ["Give up phones for a month", "Give up desserts for a month"],
+  ["Always be 10 minutes late", "Always be 2 hours early"],
+  ["Only whisper", "Only shout"],
+  ["Live without music", "Live without movies"],
+  ["Read minds", "See the future"],
+  ["Be famous", "Be rich"],
+  ["Never text again", "Never voice-call again"],
+  ["Unlimited cuddles", "Unlimited kisses"],
+  ["Explore space", "Explore the deep sea"],
+  ["Have a rewind button for life", "Have a pause button"],
+  ["Only eat pizza forever", "Only eat your favorite dish forever"],
+  ["Meet your favorite celebrity", "Get a month off with your partner"],
+  ["Be a cat", "Be a dog"],
+  ["Time travel to the past", "Time travel to the future"],
+  ["No more winter", "No more summer"],
+  ["Speak every language", "Play every instrument"],
+  ["Unlimited hugs from your partner", "Unlimited surprises from your partner"],
+  ["Camp in the mountains", "Stay in a luxury hotel"],
+  ["Karaoke night together", "Comedy show night together"],
+  ["Secretly rich", "Famously talented"],
+];
+
+/* --- Desert Island --- */
+DATA.islandItems = ['Your phone', 'Chocolate', 'A hammock', 'Coffee', 'A good book', 'Music player', 'A knife', 'Fishing gear', 'A pillow', 'Sunscreen', 'Photo of us', 'Your partner 😏'];
+DATA.islandScenarios = [
+  "You're stranded on a desert island 🏝️",
+  "You're locked in a mall overnight 🛒",
+  "You're stuck in a snowed-in cabin ❄️",
+  "A road trip across the country 🚗",
+  "One year in a tiny house 🏡",
+];
+
+/* --- Emoji Riddles --- */
+DATA.riddles = [
+  { e: "🌙💡", a: "moonlight" },
+  { e: "☀️🕶️", a: "sunglasses" },
+  { e: "🦶⚽", a: "football" },
+  { e: "🌧️🧥", a: "raincoat" },
+  { e: "🐝🏠", a: "beehive" },
+  { e: "⭐🐟", a: "starfish" },
+  { e: "🥚🌱", a: "eggplant" },
+  { e: "🌊🐴", a: "seahorse" },
+  { e: "🧠🌪️", a: "brainstorm" },
+  { e: "⚡🔦", a: "flashlight" },
+  { e: "👑🐝", a: "queen bee" },
+  { e: "🍞🧈", a: "bread and butter" },
+  { e: "🎓🎩", a: "graduation cap" },
+  { e: "❄️👸", a: "snow queen" },
+  { e: "🔥🚒", a: "fire truck" },
+];

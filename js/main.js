@@ -1,5 +1,5 @@
 /* ============ App shell: lobby, menu, game lifecycle ============ */
-const APP_VERSION = '15'; // bump together with the ?v= in index.html
+const APP_VERSION = '19'; // bump together with the ?v= in index.html
 
 const App = (() => {
   const $ = sel => document.querySelector(sel);
@@ -14,7 +14,55 @@ const App = (() => {
   function show(screen) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     $(`#screen-${screen}`).classList.add('active');
+    // global chat only makes sense once connected to a partner
+    const inRoom = screen === 'menu' || screen === 'game';
+    $('#chat-fab').style.display = inRoom ? 'block' : 'none';
+    if (!inRoom) closeChat();
   }
+
+  /* ---------- global chat (works inside any game) ---------- */
+  const chat = { open: false, unread: 0, msgs: [] };
+
+  function renderChat() {
+    const log = $('#gchat-log');
+    log.innerHTML = chat.msgs.map(m =>
+      m.sys ? `<div class="sys">${esc(m.text)}</div>`
+            : `<div><span class="who">${esc(m.name)}:</span> ${esc(m.text)}</div>`).join('');
+    log.scrollTop = log.scrollHeight;
+    const badge = $('#chat-badge');
+    badge.style.display = chat.unread > 0 ? 'block' : 'none';
+    badge.textContent = chat.unread;
+  }
+
+  function openChat() {
+    chat.open = true;
+    chat.unread = 0;
+    $('#chat-panel').classList.add('show');
+    renderChat();
+    $('#gchat-in').focus();
+  }
+
+  function closeChat() {
+    chat.open = false;
+    $('#chat-panel').classList.remove('show');
+    renderChat();
+  }
+
+  function sendChatMsg() {
+    const inp = $('#gchat-in');
+    const text = inp.value.trim();
+    if (!text || !Net.connected) return;
+    inp.value = '';
+    chat.msgs.push({ name: myName, text });
+    if (chat.msgs.length > 200) chat.msgs.shift();
+    renderChat();
+    Net.send({ t: 'chat', name: myName, text });
+  }
+
+  $('#chat-fab').onclick = openChat;
+  $('#chat-close').onclick = closeChat;
+  $('#gchat-send').onclick = sendChatMsg;
+  $('#gchat-in').addEventListener('keydown', e => { if (e.key === 'Enter') sendChatMsg(); });
 
   /* ---------- toast ---------- */
   let toastTimer = null;
@@ -211,6 +259,12 @@ const App = (() => {
         }
         startGame(d.g);
         toast(`Playing ${Games[d.g].name}!`);
+        break;
+      case 'chat':
+        chat.msgs.push({ name: d.name || partnerName, text: d.text });
+        if (chat.msgs.length > 200) chat.msgs.shift();
+        if (!chat.open) chat.unread++;
+        renderChat();
         break;
       case 'state':
         if (currentGame && currentGame.id === d.g) {

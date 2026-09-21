@@ -72,6 +72,17 @@
 
 </main>
 
+<!-- ================= GLOBAL CHAT ================= -->
+<button id="chat-fab" class="chat-fab" style="display:none">💬<span id="chat-badge" class="chat-badge" style="display:none">0</span></button>
+<div id="chat-panel" class="chat-panel">
+  <div class="chat-head"><span>💬 Chat with your partner</span><button id="chat-close">✕</button></div>
+  <div class="chat-log" id="gchat-log"></div>
+  <div class="chat-input-row">
+    <input id="gchat-in" type="text" maxlength="200" placeholder="Say something sweet…">
+    <button class="btn btn-primary" id="gchat-send">➤</button>
+  </div>
+</div>
+
 <!-- ================= OVERLAYS ================= -->
 <div id="toast" class="toast"></div>
 
@@ -84,9 +95,9 @@
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="js/net.js?v=15"></script>
-<script src="js/data.js?v=15"></script>
-<script src="js/games.js?v=15"></script>
-<script src="js/main.js?v=15"></script>
+<script src="js/net.js?v=19"></script>
+<script src="js/data.js?v=19"></script>
+<script src="js/games.js?v=19"></script>
+<script src="js/main.js?v=19"></script>
 </body>
 </html>
