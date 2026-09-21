@@ -1,5 +1,5 @@
 /* ============ App shell: lobby, menu, game lifecycle ============ */
-const APP_VERSION = '29'; // bump together with the ?v= in index.html
+const APP_VERSION = '30'; // bump together with the ?v= in index.html
 let playingApart = (function () { try { return localStorage.getItem('cgn-apart') !== 'false'; } catch (e) { return true; } })();
 
 const App = (() => {
@@ -253,6 +253,57 @@ const App = (() => {
   $('#btn-reload').onclick = () => location.reload();
 
   /* ---------- incoming messages ---------- */
+  /* ---------- turn notifications ---------- */
+  let audioCtx = null;
+  let lastPing = 0;
+  function ping() {
+    const now = Date.now();
+    if (now - lastPing < 1200) return; // avoid ping spam
+    lastPing = now;
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const o = audioCtx.createOscillator();
+      const gn = audioCtx.createGain();
+      o.connect(gn); gn.connect(audioCtx.destination);
+      o.type = 'sine';
+      o.frequency.setValueAtTime(880, audioCtx.currentTime);
+      o.frequency.setValueAtTime(1320, audioCtx.currentTime + 0.12);
+      gn.gain.setValueAtTime(0.001, audioCtx.currentTime);
+      gn.gain.exponentialRampToValueAtTime(0.18, audioCtx.currentTime + 0.02);
+      gn.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
+      o.start(); o.stop(audioCtx.currentTime + 0.5);
+    } catch (e) {}
+  }
+
+  // partner actions that mean "it's probably your turn now"
+  const TURN_LABELS = {
+    move: 'made a move',
+    flip: 'flipped a card',
+    pick: 'made a pick',
+    ans: 'answered',
+    next: 'moved to the next round',
+    card: 'drew a new card',
+    add: 'added their line',
+    ask: 'asked you a question',
+    a: 'answered your question',
+    guess: 'made a guess',
+    correct: 'got your guess',
+    wg: 'made their guess',
+    wv: 'judged your guess',
+    wround: 'started a new phrase',
+    sq: 'asked you something 🧪',
+    sa: 'answered truthfully',
+    stop: 'stopped the countdown',
+    round: 'finished their drawing',
+    end: 'finished the round',
+    lv: 'completed a level',
+    kissdone: 'delivered the kiss 💋',
+    dice: 'rolled the dice 🎲',
+    reveal: 'gave up on the drawing',
+    newword: 'picked a new word',
+  };
+
   Net.onMessage(d => {
     if (!d || typeof d !== 'object') return;
     switch (d.t) {
@@ -288,10 +339,15 @@ const App = (() => {
         chat.msgs.push({ name: d.name || partnerName, text: d.text });
         if (chat.msgs.length > 200) chat.msgs.shift();
         if (!chat.open) chat.unread++;
+        ping();
         renderChat();
         break;
       case 'state':
         if (currentGame && currentGame.id === d.g) {
+          if (TURN_LABELS[d.kind]) {
+            ping();
+            toast('💌 ' + partnerName + ' ' + TURN_LABELS[d.kind]);
+          }
           currentGame.instance.onMsg(d);
         }
         break;
