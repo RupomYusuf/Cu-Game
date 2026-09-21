@@ -1,5 +1,5 @@
 /* ============ App shell: lobby, menu, game lifecycle ============ */
-const APP_VERSION = '19'; // bump together with the ?v= in index.html
+const APP_VERSION = '20'; // bump together with the ?v= in index.html
 
 const App = (() => {
   const $ = sel => document.querySelector(sel);

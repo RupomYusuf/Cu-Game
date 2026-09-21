@@ -2429,11 +2429,18 @@ Games.draw = {
     function giveUp() {
       api.send({ kind: 'reveal', word: S.word });
       sysMsg(`Nobody got it — the word was "${S.word}"`);
-      setTimeout(endRound, 1500);
+      scheduleEnd(1500);
     }
 
     /* The host is the sole round authority: whoever stops drawing asks the
-     * host to advance, and everyone rebuilds roles from the host's broadcast. */
+     * host to advance, and everyone rebuilds roles from the host's broadcast.
+     * Only one end timer may exist per round, and the host ignores duplicate
+     * end requests for a round it has already advanced. */
+    function scheduleEnd(ms) {
+      if (S.endTimer) clearTimeout(S.endTimer);
+      S.endTimer = setTimeout(() => { S.endTimer = null; endRound(); }, ms);
+    }
+
     function endRound() {
       clearCanvas();
       api.send({ kind: 'clear' });
@@ -2606,7 +2613,7 @@ Games.draw = {
               renderScore();
               resultEl.innerHTML = `<div class="result-banner lose">${esc(api.partnerName)} guessed it! The word was "${esc(S.word)}" 💡</div>`;
               sysMsg(`${api.partnerName} guessed it! 🎉`);
-              setTimeout(endRound, 2500);
+              scheduleEnd(2500);
             }
           }
           break;
