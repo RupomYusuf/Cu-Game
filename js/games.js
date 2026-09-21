@@ -275,7 +275,8 @@ Games.cards = {
 
     function show() {
       const deck = DATA.decks[S.deck];
-      const card = deck.cards[S.idx % deck.cards.length];
+      const list = deck.cards.filter(c => !api.isApart() || !c.startsWith('🏠'));
+      const card = list[S.idx % list.length];
       // alternation is anchored to the host so both screens agree
       const firstIsHost = S.turn % 2 === 0;
       const asker = firstIsHost === api.isHost ? api.myName : api.partnerName;
@@ -286,14 +287,14 @@ Games.cards = {
 
     deckSel.onchange = () => {
       S.deck = deckSel.value;
-      S.idx = api.draw('cards-' + S.deck, DATA.decks[S.deck].cards.length);
+      S.idx = api.draw('cards-' + S.deck, DATA.decks[S.deck].cards.filter(c => !api.isApart() || !c.startsWith('🏠')).length);
       S.turn = 0;
       show();
       api.send({ kind: 'deck', deck: S.deck, idx: S.idx, turn: S.turn });
     };
 
     root.querySelector('#cards-next').onclick = () => {
-      S.idx = api.draw('cards-' + S.deck, DATA.decks[S.deck].cards.length);
+      S.idx = api.draw('cards-' + S.deck, DATA.decks[S.deck].cards.filter(c => !api.isApart() || !c.startsWith('🏠')).length);
       S.turn++;
       show();
       api.send({ kind: 'card', idx: S.idx, turn: S.turn });
@@ -2058,24 +2059,16 @@ Games.intimate = {
           <button class="game-card" data-mode="whisper"><span class="gc-icon">🤫</span><span class="gc-name">Whisper Challenge</span></button>
           ${S.level === 'extreme' ? '<button class="game-card" data-mode="levels"><span class="gc-icon">🏆</span><span class="gc-name">Level Up</span></button>' : ''}
         </div>
-        <div style="margin-top:16px">
-          <button class="btn btn-ghost" style="color:var(--rose-dark);border-color:var(--rose-light)" id="in-apart">${S.apart ? '📱 Playing apart' : '🏠 Playing together'}</button>
-        </div>
-        <p class="muted" style="margin-top:10px;font-size:.8rem">${S.apart
-          ? 'Apart mode: only challenges you can do on camera or with snaps.'
-          : 'Together mode: includes challenges that need you in the same room.'}</p>`;
+        <p class="muted" style="margin-top:10px;font-size:.8rem">${api.isApart()
+          ? '📱 Apart mode: only camera & snap challenges.'
+          : '🏠 Together mode: includes challenges for the same room.'}</p>`;
       panel.querySelectorAll('.game-card').forEach(b => b.onclick = () => toMode(b.dataset.mode));
-      panel.querySelector('#in-apart').onclick = () => {
-        S.apart = !S.apart;
-        render();
-        api.send({ kind: 'apart', v: S.apart });
-      };
     }
 
     /* ---------- card deck ---------- */
     function renderCards() {
       const deck = L[S.level];
-      const list = deck.cards.filter(c => !S.apart || !c.startsWith('🏠'));
+      const list = deck.cards.filter(c => !api.isApart() || !c.startsWith('🏠'));
       const card = list[S.idx % list.length];
       const firstIsHost = S.cardTurn % 2 === 0;
       const asker = firstIsHost === api.isHost ? api.myName : api.partnerName;
@@ -2145,7 +2138,7 @@ Games.intimate = {
 
     function darePool() {
       const cfg = L[S.level];
-      return S.apart ? cfg.daresApart : cfg.daresTogether;
+      return api.isApart() ? cfg.daresApart : cfg.daresTogether;
     }
 
     /* mood curve: pools are ordered warm -> intense; early rounds only draw
@@ -2593,7 +2586,7 @@ Games.intimate = {
         if (mine) {
           const pick = type => {
             const list = type === 'truth' ? cfg.truths : darePool();
-            const i = type === 'truth' ? api.draw('todt-' + S.level, cfg.truths.length) : api.drawLimited('todd-' + S.level + (S.apart ? '-a' : '-t'), darePool().length, moodLimit());
+            const i = type === 'truth' ? api.draw('todt-' + S.level, cfg.truths.length) : api.drawLimited('todd-' + S.level + (api.isApart() ? '-a' : '-t'), darePool().length, moodLimit());
             S.mood++;
             S.tod.showing = { type, text: list[i] };
             render();
@@ -2638,7 +2631,7 @@ Games.intimate = {
         panel.querySelector('#timer-back3').onclick = () => toMode('menu');
         panel.querySelector('#timer-start').onclick = () => {
           const pool = darePool();
-          const i = api.drawLimited('todd-' + S.level + (S.apart ? '-a' : '-t'), darePool().length, moodLimit());
+          const i = api.drawLimited('todd-' + S.level + (api.isApart() ? '-a' : '-t'), darePool().length, moodLimit());
           S.mood++;
           S.timer = { end: Date.now() + 60000, dare: pool[i], iv: null };
           render();
@@ -2732,9 +2725,8 @@ Games.intimate = {
             break;
           case 'apart':
             if (S.phase === 'play') {
-              S.apart = d.v;
               if (S.mode === 'menu') render();
-              api.toast(S.apart ? '📱 Playing apart' : '🏠 Playing together');
+              api.toast(d.v ? '📱 Playing apart' : '🏠 Playing together');
             }
             break;
           case 'snap':

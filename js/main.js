@@ -1,5 +1,6 @@
 /* ============ App shell: lobby, menu, game lifecycle ============ */
-const APP_VERSION = '28'; // bump together with the ?v= in index.html
+const APP_VERSION = '29'; // bump together with the ?v= in index.html
+let playingApart = (function () { try { return localStorage.getItem('cgn-apart') !== 'false'; } catch (e) { return true; } })();
 
 const App = (() => {
   const $ = sel => document.querySelector(sel);
@@ -17,6 +18,7 @@ const App = (() => {
     // global chat only makes sense once connected to a partner
     const inRoom = screen === 'menu' || screen === 'game';
     $('#chat-fab').style.display = inRoom ? 'block' : 'none';
+    $('#apart-toggle').style.display = inRoom ? 'inline-block' : 'none';
     if (!inRoom) closeChat();
   }
 
@@ -192,6 +194,16 @@ const App = (() => {
     Object.entries(Games).filter(([id]) => id !== 'intimate')
       .forEach(([id, g]) => grid.appendChild(makeGameCard(id, g)));
 
+    const tgl = $('#apart-toggle');
+    tgl.style.display = 'inline-block';
+    tgl.textContent = playingApart ? '📱 Playing apart' : '🏠 Playing together';
+    tgl.onclick = () => {
+      playingApart = !playingApart;
+      try { localStorage.setItem('cgn-apart', playingApart); } catch (e) {}
+      Net.send({ t: 'apart', v: playingApart });
+      enterMenu();
+    };
+
     // separate consent-gated 18+ zone below the regular games
     const zone = $('#intimate-zone');
     zone.style.display = 'block';
@@ -217,6 +229,7 @@ const App = (() => {
       send: obj => Net.send({ t: 'state', g: id, ...obj }),
       draw: (key, len) => { const i = Deck.draw(key, len); Net.send({ t: 'deck', key, i }); return i; },
       drawLimited: (key, len, limit) => { const i = Deck.draw(key, len, limit); Net.send({ t: 'deck', key, i }); return i; },
+      isApart: () => playingApart,
       setScore: html => { $('#game-score').textContent = html; },
       toast,
     });
@@ -261,6 +274,12 @@ const App = (() => {
         }
         startGame(d.g);
         toast(`Playing ${Games[d.g].name}!`);
+        break;
+      case 'apart':
+        playingApart = d.v;
+        try { localStorage.setItem('cgn-apart', playingApart); } catch (e) {}
+        if (currentGame && currentGame.id === 'intimate') currentGame.instance.onMsg({ kind: 'apart', v: playingApart });
+        if (document.querySelector('.screen.active')?.id === 'screen-menu') enterMenu();
         break;
       case 'deck':
         Deck.mark(d.key, d.i);
