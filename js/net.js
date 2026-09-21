@@ -102,36 +102,49 @@ const Net = (() => {
     start(makeCode(), 0);
   }
 
-  /* Join a room by code. Retries up to 3 attempts (the host may still be
-   * registering, or may be reconnecting after a phone lock). */
+  /* Join a room by code. Retries up to 3 attempts, surfaces broker/network
+   * failures immediately (they used to be swallowed, leaving 'Connecting…' forever). */
   function join(code, onReady, onError) {
     isHost = false;
     destroy();
     const attempt = (n) => {
+      let settled = false;
+      const settle = (msg) => {
+        if (settled) return;
+        settled = true;
+        onError(msg);
+      };
+      const progress = (msg) => { if (!settled) onError(msg); };
       peer = new Peer(peerOptions());
       watchBroker(peer);
+      // registered BEFORE open: broker/network failures must not be swallowed
+      peer.on('error', err => {
+        if (settled) return;
+        if (err.type === 'peer-unavailable') {
+          if (n < 2) {
+            progress('Connecting… retry ' + (n + 2) + '/3');
+            setTimeout(() => {
+              if (settled) return;
+              try { peer.destroy(); } catch (e) {}
+              attempt(n + 1);
+            }, 2000);
+          } else {
+            settle("Room not found — make sure the host's page is still open (screen unlocked), then try again.");
+          }
+        } else if (err.type === 'network' || err.type === 'server-error' || err.type === 'socket-error' || err.type === 'socket-closed') {
+          settle("Can't reach the connection server — check your internet, or try switching between Wi-Fi and mobile data.");
+        } else {
+          settle('Connection problem: ' + err.type);
+        }
+      });
       peer.on('open', () => {
+        progress('Connecting… final attempt');
         const c = peer.connect(PREFIX + code.toUpperCase(), { reliable: true });
         bind(c, onReady);
-        // give up (for this attempt) if the host id can't be reached
-        peer.on('error', err => {
-          if (err.type === 'peer-unavailable') {
-            if (n < 2) {
-              setTimeout(() => {
-                try { peer.destroy(); } catch (e) {}
-                attempt(n + 1);
-              }, 2000);
-            } else {
-              onError('Room not found — make sure the host\'s page is still open (screen unlocked), then try again.');
-            }
-          } else if (err.type !== 'peer-unavailable') {
-            onError('Connection problem: ' + err.type);
-          }
-        });
-        // safety net: no answer at all
+        // safety net: nothing at all within 12s of the final attempt
         setTimeout(() => {
-          if (!conn && n >= 2) {
-            onError('Could not reach the room. Check the code and ask the host to refresh.');
+          if (!settled && !conn) {
+            settle('Could not reach the room. Check the code, ask the host to stay on their page, and try again.');
           }
         }, 12000);
       });
