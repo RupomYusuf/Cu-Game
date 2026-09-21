@@ -28,17 +28,23 @@ const Net = (() => {
 
   function peerOptions() {
     return {
-      debug: 1,
+      debug: 2,
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:global.stun.twilio.com:3478' },
-          // free public TURN relays — needed when both players are behind
-          // strict mobile/carrier networks that can't peer directly
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          // two free TURN relay providers — strict mobile/carrier networks
+          // usually can't connect directly and need one of these
           { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
           { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
           { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+          { urls: 'turns:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+          { urls: 'turn:standard.relay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+          { urls: 'turn:standard.relay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+          { urls: 'turn:standard.relay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
         ],
+        iceCandidatePoolSize: 10,
       },
     };
   }
@@ -141,6 +147,13 @@ const Net = (() => {
         progress('Connecting… final attempt');
         const c = peer.connect(PREFIX + code.toUpperCase(), { reliable: true });
         bind(c, onReady);
+        // detect the link stage: if the relay also fails, say so clearly
+        c.on('iceStateChanged', () => {
+          const st = c.peerConnection && c.peerConnection.iceConnectionState;
+          if (st === 'failed' && !settled) {
+            settle('Found the room, but your two networks refuse the link (even the relay failed). Try: put one device on mobile data, then reconnect.');
+          }
+        });
         // safety net: nothing at all within 12s of the final attempt
         setTimeout(() => {
           if (!settled && !conn) {
