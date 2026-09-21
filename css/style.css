@@ -480,3 +480,10 @@ input[type="text"]:focus { border-color: var(--rose); }
   transition: background .15s;
 }
 .apart-toggle:hover { background: rgba(255,255,255,.18); }
+
+/* chat fab pulses while there are unread messages */
+.chat-fab.unread { animation: chatPulse 1.4s ease-in-out infinite; }
+@keyframes chatPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+  50% { transform: scale(1.12); box-shadow: 0 10px 30px rgba(231,84,128,.75); }
+}

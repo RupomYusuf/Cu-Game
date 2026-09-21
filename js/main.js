@@ -1,5 +1,5 @@
 /* ============ App shell: lobby, menu, game lifecycle ============ */
-const APP_VERSION = '33'; // bump together with the ?v= in index.html
+const APP_VERSION = '34'; // bump together with the ?v= in index.html
 let playingApart = (function () { try { return localStorage.getItem('cgn-apart') !== 'false'; } catch (e) { return true; } })();
 
 const App = (() => {
@@ -34,6 +34,7 @@ const App = (() => {
     const badge = $('#chat-badge');
     badge.style.display = chat.unread > 0 ? 'block' : 'none';
     badge.textContent = chat.unread;
+    $('#chat-fab').classList.toggle('unread', chat.unread > 0);
   }
 
   function openChat() {
@@ -338,7 +339,10 @@ const App = (() => {
       case 'chat':
         chat.msgs.push({ name: d.name || partnerName, text: d.text });
         if (chat.msgs.length > 200) chat.msgs.shift();
-        if (!chat.open) chat.unread++;
+        if (!chat.open) {
+          chat.unread++;
+          toast('💬 ' + (d.name || partnerName) + ': ' + d.text.slice(0, 60));
+        }
         ping();
         renderChat();
         break;
