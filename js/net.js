@@ -29,6 +29,12 @@ const Net = (() => {
   function peerOptions() {
     return {
       debug: 2,
+      // force ONE endpoint for everyone: a host on http://localhost and a
+      // guest on https:// must land on the same registry or rooms never meet
+      host: '0.peerjs.com',
+      port: 443,
+      path: '/',
+      secure: true,
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
@@ -52,6 +58,7 @@ const Net = (() => {
   // keep the signaling connection alive across phone locks / network switches
   function watchBroker(p) {
     p.on('disconnected', () => {
+      emitStatus('broker-lost');
       try { p.reconnect(); } catch (e) {}
     });
     document.addEventListener('visibilitychange', () => {

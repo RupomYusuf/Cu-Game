@@ -1,5 +1,5 @@
 /* ============ App shell: lobby, menu, game lifecycle ============ */
-const APP_VERSION = '32'; // bump together with the ?v= in index.html
+const APP_VERSION = '33'; // bump together with the ?v= in index.html
 let playingApart = (function () { try { return localStorage.getItem('cgn-apart') !== 'false'; } catch (e) { return true; } })();
 
 const App = (() => {
@@ -355,9 +355,14 @@ const App = (() => {
   });
 
   Net.onStatus(s => {
+    if (s === 'broker-lost') {
+      const bs = document.querySelector('#broker-status');
+      if (bs) { bs.textContent = '⚠️ Connection service dropped — reconnecting…'; }
+      return;
+    }
     if (s !== 'disconnected') return;
     // ignore while still in the lobby (never connected yet)
-    if ($('#screen-lobby').classList.contains('active')) return;
+    if ($('#screen-lobby').classList.contains('active') || $('#screen-waiting').classList.contains('active')) return;
     $('#disconnect-reason').textContent = partnerName
       ? `${partnerName} left the room.`
       : 'Your partner left the room.';
