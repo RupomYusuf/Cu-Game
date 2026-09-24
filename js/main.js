@@ -1,5 +1,5 @@
 /* ============ App shell: lobby, menu, game lifecycle ============ */
-const APP_VERSION = '36'; // bump together with the ?v= in index.html
+const APP_VERSION = '37'; // bump together with the ?v= in index.html
 let playingApart = (function () { try { return localStorage.getItem('cgn-apart') !== 'false'; } catch (e) { return true; } })();
 
 const App = (() => {
@@ -125,16 +125,18 @@ const App = (() => {
 
   $('#btn-host').onclick = () => {
     myName = $('#name-input').value.trim() || 'Player 1';
-    lobbyError('Creating room…');
-    Net.host(
-      code => {
-        roomCode = code;
-        lobbyError('');
-        $('#room-code').textContent = code;
-        show('waiting');
+    lobbyError('');
+    // room is live immediately; onReady fires when the partner joins
+    roomCode = Net.host(
+      () => {
+        const bs = $('#broker-status');
+        if (bs) bs.textContent = '💕 Partner connected!';
+        connectedFlow();
       },
-      errType => lobbyError('Connection error: ' + errType)
+      err => lobbyError(err)
     );
+    $('#room-code').textContent = roomCode;
+    show('waiting');
   };
 
   $('#btn-join').onclick = () => {

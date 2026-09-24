@@ -1,24 +1,29 @@
-/* ============ Networking (PeerJS) ============
- * Host creates a peer with a fixed id derived from a 4-letter room code.
- * Guest generates a random peer id and dials the host.
- * Only 2 players per room; extra connections are refused.
+/* ============ Networking (Trystero — serverless WebRTC) ============
+ * Why Trystero instead of PeerJS:
+ *  - No single signaling broker: peer discovery runs over several public
+ *    Nostr relays, so there is no demo-grade server to fall over.
+ *  - Presence-based rooms: the guest joins the room and waits for the host
+ *    to appear - no more dialing a dead ID ("peer unavailable" is gone).
+ *  - Auto re-announce/reconnect is built in.
  *
- * Cross-device notes:
- *  - TURN relays are configured (Open Relay free TURN) because STUN-only
- *    often fails between two mobile networks.
- *  - The signaling connection auto-reconnects (phone lock / network switch),
- *    and the guest retries the join a few times.
+ * External API (unchanged for the rest of the app):
+ *   host(code?), join(code), send(obj), onMessage, onStatus,
+ *   connected, isHost
  */
 const Net = (() => {
-  const PREFIX = 'couplesgn-';
+  const APP_ID = 'games-night-couples-v1';
   const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ'; // no I, L, O (easy to confuse)
 
-  let peer = null;
-  let conn = null;
+  let lib = null;          // trystero module
+  let libPromise = null;
+  let room = null;
+  let sendRaw = null;
+  let connPeerId = null;
   let isHost = false;
+  let leaveTimer = null;
 
   const msgHandlers = [];    // (data) => void
-  const statusHandlers = []; // (status: 'connected'|'disconnected') => void
+  const statusHandlers = []; // (status) => void
 
   function makeCode() {
     let c = '';
@@ -26,156 +31,114 @@ const Net = (() => {
     return c;
   }
 
-  function peerOptions() {
-    return {
-      debug: 2,
-      // force ONE endpoint for everyone: a host on http://localhost and a
-      // guest on https:// must land on the same registry or rooms never meet
-      host: '0.peerjs.com',
-      port: 443,
-      path: '/',
-      secure: true,
-      config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          // two free TURN relay providers — strict mobile/carrier networks
-          // usually can't connect directly and need one of these
-          { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-          { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-          { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-          { urls: 'turns:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-          { urls: 'turn:standard.relay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-          { urls: 'turn:standard.relay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-          { urls: 'turn:standard.relay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-        ],
-        iceCandidatePoolSize: 10,
-      },
-    };
-  }
-
-  // keep the signaling connection alive across phone locks / network switches
-  function watchBroker(p) {
-    p.on('disconnected', () => {
-      emitStatus('broker-lost');
-      try { p.reconnect(); } catch (e) {}
-    });
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && p.disconnected) {
-        try { p.reconnect(); } catch (e) {}
-      }
-    });
-  }
-
   function emitStatus(s) { statusHandlers.forEach(h => h(s)); }
   function emitMsg(d) { msgHandlers.forEach(h => h(d)); }
 
-  function bind(c, onOpen) {
-    c.on('open', () => {
-      conn = c;
-      if (onOpen) onOpen();
-      emitStatus('connected');
-    });
-    c.on('data', d => emitMsg(d));
-    c.on('close', () => {
-      conn = null;
-      emitStatus('disconnected');
-    });
-    c.on('error', () => {
-      conn = null;
-      emitStatus('disconnected');
-    });
+  /* load trystero with CDN fallbacks */
+  async function ensureLib() {
+    if (lib) return lib;
+    if (libPromise) return libPromise;
+    const sources = [
+      'https://esm.sh/trystero@0.21.1/nostr',
+      'https://cdn.jsdelivr.net/npm/trystero@0.21.1/nostr/+esm',
+      'https://esm.sh/trystero/nostr',
+      'https://cdn.jsdelivr.net/npm/trystero/nostr/+esm'
+    ];
+    libPromise = (async () => {
+      let lastErr = null;
+      for (const src of sources) {
+        try {
+          lib = await import(src);
+          if (lib && lib.joinRoom) return lib;
+        } catch (e) { lastErr = e; }
+      }
+      throw lastErr || new Error('no cdn');
+    })();
+    return libPromise;
   }
 
-  function destroy() {
-    try { if (conn) conn.close(); } catch (e) {}
-    try { if (peer) peer.destroy(); } catch (e) {}
-    conn = null;
-    peer = null;
+  function closeRoom() {
+    try { if (room) room.leave(); } catch (e) {}
+    room = null;
+    sendRaw = null;
+    connPeerId = null;
+    if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
   }
 
-  /* Host a room. Retries with a new code if the id is taken. */
-  function host(onReady, onError) {
-    isHost = true;
-    destroy();
-    const start = (code, attempt) => {
-      peer = new Peer(PREFIX + code, peerOptions());
-      watchBroker(peer);
-      peer.on('open', () => onReady(code));
-      peer.on('connection', c => {
-        if (conn && conn.open) { try { c.close(); } catch (e) {} return; }
-        bind(c);
+  async function setupRoom(code, onReady, onError) {
+    try {
+      const t = await ensureLib();
+      closeRoom();
+      room = t.joinRoom({ appId: APP_ID }, 'room-' + code);
+
+      const [send, onMsg] = room.makeAction('g');
+      sendRaw = o => { try { send(o); } catch (e) {} };
+      onMsg((data, peerId) => {
+        if (peerId !== connPeerId) return; // ignore extra peers
+        emitMsg(data);
       });
-      peer.on('error', err => {
-        if (err.type === 'unavailable-id' && attempt < 5) start(makeCode(), attempt + 1);
-        else if (err.type !== 'peer-unavailable') onError(err.type);
-      });
-    };
-    start(makeCode(), 0);
-  }
 
-  /* Join a room by code. Retries up to 3 attempts, surfaces broker/network
-   * failures immediately (they used to be swallowed, leaving 'Connecting…' forever). */
-  function join(code, onReady, onError) {
-    isHost = false;
-    destroy();
-    const attempt = (n) => {
-      let settled = false;
-      const settle = (msg) => {
-        if (settled) return;
-        settled = true;
-        onError(msg);
-      };
-      const progress = (msg) => { if (!settled) onError(msg); };
-      peer = new Peer(peerOptions());
-      watchBroker(peer);
-      // registered BEFORE open: broker/network failures must not be swallowed
-      peer.on('error', err => {
-        if (settled) return;
-        if (err.type === 'peer-unavailable') {
-          if (n < 2) {
-            progress('Connecting… retry ' + (n + 2) + '/3');
-            setTimeout(() => {
-              if (settled) return;
-              try { peer.destroy(); } catch (e) {}
-              attempt(n + 1);
-            }, 2000);
-          } else {
-            settle("Room not found — make sure the host's page is still open (screen unlocked), then try again.");
-          }
-        } else if (err.type === 'network' || err.type === 'server-error' || err.type === 'socket-error' || err.type === 'socket-closed') {
-          settle("Can't reach the connection server — check your internet, or try switching between Wi-Fi and mobile data.");
-        } else {
-          settle('Connection problem: ' + err.type);
+      room.onPeerJoin(pid => {
+        // accept only the first peer (2-player rooms); ignore everyone else
+        if (connPeerId && connPeerId !== pid) return;
+        if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
+        const isNew = connPeerId !== pid;
+        connPeerId = pid;
+        if (isNew) {
+          emitStatus('connected');
+          if (onReady) onReady(code);
         }
       });
-      peer.on('open', () => {
-        progress('Connecting… final attempt');
-        const c = peer.connect(PREFIX + code.toUpperCase(), { reliable: true });
-        bind(c, onReady);
-        // detect the link stage: if the relay also fails, say so clearly
-        c.on('iceStateChanged', () => {
-          const st = c.peerConnection && c.peerConnection.iceConnectionState;
-          if (st === 'failed' && !settled) {
-            settle('Found the room, but your two networks refuse the link (even the relay failed). Try: put one device on mobile data, then reconnect.');
+
+      room.onPeerLeave(pid => {
+        if (pid !== connPeerId) return;
+        // grace period: quick rejoin (network blip) doesn't kill the room
+        if (leaveTimer) clearTimeout(leaveTimer);
+        leaveTimer = setTimeout(() => {
+          if (connPeerId === pid) {
+            connPeerId = null;
+            emitStatus('disconnected');
           }
-        });
-        // safety net: nothing at all within 12s of the final attempt
-        setTimeout(() => {
-          if (!settled && !conn) {
-            settle('Could not reach the room. Check the code, ask the host to stay on their page, and try again.');
-          }
-        }, 12000);
+        }, 3000);
       });
-    };
-    attempt(0);
+
+      return true;
+    } catch (e) {
+      if (onError) onError("Couldn't load the connection library - check your internet and refresh.");
+      return false;
+    }
+  }
+
+  /* Host a room. onReady fires when a partner actually joins. */
+  function host(onReady, onError) {
+    isHost = true;
+    const code = makeCode();
+    setupRoom(code, onReady, onError);
+    return code;
+  }
+
+  /* Join a room. Presence-based: keeps looking until the host appears.
+   * After 15s we surface a helpful error but KEEP searching - if the host
+   * shows up later the connection still completes. */
+  function join(code, onReady, onError) {
+    isHost = false;
+    const upper = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+    if (upper.length !== 4) {
+      onError('Enter the 4-letter room code.');
+      return;
+    }
+    setupRoom(upper, onReady, onError).then(started => {
+      if (!started) return;
+      setTimeout(() => {
+        if (!connPeerId) {
+          onError('Room not found yet - double-check the code and make sure the host\'s screen is on. Still searching...');
+        }
+      }, 15000);
+    });
   }
 
   function send(obj) {
-    if (conn && conn.open) {
-      try { conn.send(obj); } catch (e) {}
-    }
+    if (connPeerId && sendRaw) sendRaw(obj);
   }
 
   function onMessage(h) { msgHandlers.push(h); }
@@ -183,7 +146,7 @@ const Net = (() => {
 
   return {
     host, join, send, onMessage, onStatus,
-    get connected() { return !!(conn && conn.open); },
+    get connected() { return !!connPeerId; },
     get isHost() { return isHost; }
   };
 })();
