@@ -1,5 +1,5 @@
 /* ============ App shell: lobby, menu, game lifecycle ============ */
-const APP_VERSION = '39'; // bump together with the ?v= in index.html
+const APP_VERSION = '40'; // bump together with the ?v= in index.html
 let playingApart = (function () { try { return localStorage.getItem('cgn-apart') !== 'false'; } catch (e) { return true; } })();
 
 const App = (() => {
@@ -135,7 +135,8 @@ const App = (() => {
         if (bs) bs.textContent = '💕 Partner connected!';
         connectedFlow();
       },
-      err => lobbyError(err)
+      err => lobbyError(err),
+      myName
     );
     $('#room-code').textContent = roomCode;
     show('waiting');
@@ -152,7 +153,8 @@ const App = (() => {
     lobbyError('Connecting…');
     Net.join(code,
       () => { lobbyError(''); roomCode = code; connectedFlow(); },
-      err => lobbyError('Could not connect: ' + err)
+      err => lobbyError(err),
+      myName
     );
   };
 

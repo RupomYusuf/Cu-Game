@@ -2979,7 +2979,7 @@ Games.draw = {
         pending = [];
       }
     };
-    const flushInterval = setInterval(flush, 60);
+    const flushInterval = setInterval(flush, 150);
     window.addEventListener('pointerup', () => {
       if (drawingNow) { drawingNow = false; flush(); }
     });

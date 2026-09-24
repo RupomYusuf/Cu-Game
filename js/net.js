@@ -1,27 +1,37 @@
-/* ============ Networking (Trystero — dual-strategy WebRTC) ============
- * Reliability model:
- *  - The room is joined on TWO independent discovery networks at once
- *    (Nostr relays + MQTT brokers). Different protocols, different
- *    infrastructure, different blocking profiles. If a network blocks one,
- *    the other still connects the two players.
- *  - Presence-based: the guest waits in the room until the host appears.
- *    "Peer unavailable" is structurally impossible.
- *  - First path to discover a peer wins; data flows only through that path.
+/* ============ Networking (MQTT relay transport) ============
+ * Design: NO peer-to-peer. Game messages are relayed through a public
+ * MQTT broker over WebSocket-Secure (looks like ordinary web traffic, so
+ * it works through networks that block direct device-to-device links).
+ * Payloads are end-to-end encrypted with AES-GCM using a key derived from
+ * the room code - the broker only ever sees ciphertext.
+ *
+ * Presence: every client publishes a heartbeat every 2.5s; the partner is
+ * "connected" when any message from them arrives, and "gone" after ~11s
+ * of silence. mqtt.js auto-reconnects the socket if it drops.
  *
  * External API (unchanged for the rest of the app):
  *   host(), join(code), send(obj), onMessage, onStatus, connected, isHost
  */
 const Net = (() => {
-  const APP_ID = 'games-night-couples-v1';
+  const APP_ID = 'games-night-v1';
   const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ';
+  const BROKERS = [
+    'wss://broker.emqx.io:8084/mqtt',
+    'wss://broker.hivemq.com:8884/mqtt',
+    'wss://broker-cn.emqx.io:8084/mqtt'
+  ];
 
-  let mods = {};           // strategy key -> trystero module
-  let rooms = {};          // strategy key -> room
-  let peerRoom = {};       // peerId -> strategy key (first path wins)
-  let sendRaw = {};        // strategy key -> send fn
-  let connPeerId = null;
+  const selfId = 'gn-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+  let client = null;
+  let topicBase = '';
   let isHost = false;
+  let cryptoKey = null;
+  let connPeerId = null;
+  let lastSeen = 0;
+  let hbTimer = null;
+  let watchTimer = null;
   let leaveTimer = null;
+  let nameLocal = '';
 
   const msgHandlers = [];
   const statusHandlers = [];
@@ -35,156 +45,182 @@ const Net = (() => {
   function emitStatus(s) { statusHandlers.forEach(h => h(s)); }
   function emitMsg(d) { msgHandlers.forEach(h => h(d)); }
 
-  async function loadModule(strategy) {
-    const sources = [
-      'https://esm.sh/trystero@0.21.1/' + strategy,
-      'https://cdn.jsdelivr.net/npm/trystero@0.21.1/' + strategy + '/+esm',
-      'https://esm.sh/trystero/' + strategy,
-      'https://cdn.jsdelivr.net/npm/trystero/' + strategy + '/+esm'
-    ];
-    for (const src of sources) {
+  /* ---- end-to-end encryption (key derived from room code) ---- */
+  async function deriveKey(code) {
+    try {
+      const enc = new TextEncoder().encode(APP_ID + ':' + code);
+      const hash = await crypto.subtle.digest('SHA-256', enc);
+      return await crypto.subtle.importKey('raw', hash, 'AES-GCM', false, ['encrypt', 'decrypt']);
+    } catch (e) { return null; }
+  }
+
+  async function encrypt(obj) {
+    const json = JSON.stringify(Object.assign({ f: selfId }, obj));
+    if (!cryptoKey) return json;
+    try {
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, cryptoKey, new TextEncoder().encode(json));
+      const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+      return JSON.stringify({ iv: b64(iv), ct: b64(ct) });
+    } catch (e) { return json; }
+  }
+
+  async function decrypt(payload) {
+    let parsed;
+    try { parsed = JSON.parse(payload); } catch (e) { return null; }
+    if (parsed && parsed.iv && parsed.ct && cryptoKey) {
       try {
-        const m = await import(src);
-        if (m && m.joinRoom) return m;
-      } catch (e) { /* try next CDN */ }
+        const fromB64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+        const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(parsed.iv) }, cryptoKey, fromB64(parsed.ct));
+        return JSON.parse(new TextDecoder().decode(pt));
+      } catch (e) { return null; }
     }
-    return null;
+    return parsed; // plaintext fallback
+  }
+
+  /* ---- broker connection with failover ---- */
+  function connectBroker() {
+    return new Promise(resolve => {
+      let i = 0;
+      const tryNext = () => {
+        if (i >= BROKERS.length) { resolve(null); return; }
+        const url = BROKERS[i++];
+        let settled = false;
+        let c;
+        try {
+          c = mqtt.connect(url, {
+            clientId: selfId + Math.random().toString(36).slice(2, 6),
+            keepalive: 30,
+            reconnectPeriod: 4000,
+            connectTimeout: 8000,
+            clean: true
+          });
+        } catch (e) { tryNext(); return; }
+        c.on('connect', () => { if (!settled) { settled = true; resolve(c); } });
+        c.on('error', () => { if (!settled) { settled = true; try { c.end(true); } catch (e) {} tryNext(); } });
+        c.on('close', () => { if (!settled) { settled = true; tryNext(); } });
+      };
+      tryNext();
+    });
+  }
+
+  function publish(obj) {
+    if (!client) return;
+    encrypt(obj).then(s => {
+      try { client.publish(topicBase + 'data', s, { qos: 0 }); } catch (e) {}
+    });
+  }
+
+  function handleIncoming(msg, onReady) {
+    if (!msg || msg.f === selfId) return; // our own echo
+    lastSeen = Date.now();
+    if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
+    const isNew = connPeerId === null;
+    connPeerId = msg.f;
+    if (msg.t === 'presence') {
+      if (isNew) {
+        emitStatus('connected');
+        emitStatus('path-relay');
+        if (onReady) onReady();
+      }
+      return; // heartbeats don't reach the app
+    }
+    if (isNew) {
+      emitStatus('connected');
+      if (onReady) onReady();
+    }
+    emitMsg(msg);
   }
 
   function closeAll() {
-    for (const k in rooms) { try { rooms[k].leave(); } catch (e) {} }
-    rooms = {};
-    sendRaw = {};
-    peerRoom = {};
+    if (hbTimer) { clearInterval(hbTimer); hbTimer = null; }
+    if (watchTimer) { clearInterval(watchTimer); watchTimer = null; }
+    if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
+    try { if (client) client.end(true); } catch (e) {}
+    client = null;
     connPeerId = null;
-    if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
   }
 
-  function onPeerJoinFor(key, pid, onReady, code) {
-    if (peerRoom[pid] && peerRoom[pid] !== key) return; // already connected via other path
-    if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
-    const isNew = connPeerId !== pid;
-    peerRoom[pid] = key;
-    connPeerId = pid;
-    if (isNew) {
-      emitStatus('connected');
-      emitStatus('path-' + key);
-      if (onReady) onReady(code);
-    }
-  }
+  window.__trace = [];
+  window.addEventListener('unhandledrejection', e => window.__trace.push('REJECTION: ' + (e.reason && e.reason.message || e.reason)));
 
-  function onPeerLeaveFor(key, pid) {
-    if (peerRoom[pid] !== key) return;
-    delete peerRoom[pid];
-    if (connPeerId !== pid) return;
-    // grace period: quick rejoin on either path cancels the disconnect
-    if (leaveTimer) clearTimeout(leaveTimer);
-    leaveTimer = setTimeout(() => {
-      if (connPeerId === pid && !peerRoom[pid]) {
-        connPeerId = null;
-        emitStatus('disconnected');
-      }
-    }, 3000);
-  }
-
-  async function setupRoom(code, onReady, onError) {
+  async function setup(code, onReady, onError) {
+    const tr = m => { try { window.__trace.push(m); } catch (e) {} };
+    tr('setup:start code=' + code);
     closeAll();
-    // load both discovery networks; each continues even if the other fails
-    const [nostr, mqtt] = await Promise.all([loadModule('nostr'), loadModule('mqtt')]);
-    if (!nostr && !mqtt) {
+    if (typeof mqtt === 'undefined') {
       onError("Couldn't load the connection library — check your internet and refresh.");
       return false;
     }
-    if (nostr) mods.nostr = nostr;
-    if (mqtt) mods.mqtt = mqtt;
-
-    for (const key of Object.keys(mods)) {
-      try {
-        const rtcConfig = {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            // TURN relays: without these, two phones on different carriers'
-            // networks usually CANNOT link directly. Two providers for backup.
-            { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-            { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-            { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-            { urls: 'turns:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-            { urls: 'turn:standard.relay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-            { urls: 'turn:standard.relay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-            { urls: 'turn:standard.relay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-            { urls: 'turns:standard.relay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
-          ],
-          iceCandidatePoolSize: 10
-        };
-        const r = mods[key].joinRoom({ appId: APP_ID, rtcConfig }, 'room-' + code);
-        // diagnostics: if we see the partner via signaling but their link
-        // stays in 'failed' state, the relay/NAT stage is what's broken
-        setTimeout(() => {
-          try {
-            if (typeof r.getPeers !== 'function') return;
-            const peers = r.getPeers();
-            for (const pid in peers) {
-              if (pid !== connPeerId) continue;
-              const pc = peers[pid];
-              const st = pc.iceConnectionState || pc.connectionState;
-              if (st === 'failed' || st === 'disconnected' || st === 'closed') {
-                onError('You two FOUND each other, but the networks refuse the final link (relay failed). Try: put ONE phone on mobile data, then reconnect.');
-              }
-            }
-          } catch (e) {}
-        }, 22000);
-        rooms[key] = r;
-        const [send, onMsg] = r.makeAction('g');
-        sendRaw[key] = o => { try { send(o); } catch (e) {} };
-        onMsg((data, pid) => {
-          if (pid !== connPeerId || peerRoom[pid] !== key) return;
-          emitMsg(data);
-        });
-        r.onPeerJoin(pid => onPeerJoinFor(key, pid, onReady, code));
-        r.onPeerLeave(pid => onPeerLeaveFor(key, pid));
-      } catch (e) { /* this strategy failed; the other may still work */ }
+    cryptoKey = await deriveKey(code);
+    tr('derive done, key=' + !!cryptoKey);
+    topicBase = 'gamesnight/v1/' + code + '/';
+    tr('broker resolving…');
+    const c = await connectBroker();
+    tr('broker done, has client=' + !!c);
+    if (!c) {
+      onError("Can't reach the message broker — check your internet, then try again.");
+      return false;
     }
-    return Object.keys(rooms).length > 0;
+    client = c;
+    client.on('message', (topic, payload) => {
+      decrypt(payload.toString()).then(msg => handleIncoming(msg, onReady));
+    });
+    client.subscribe(topicBase + 'data', { qos: 0 }, err => {
+      if (err) onError('Broker subscription failed — try again.');
+    });
+
+    // presence heartbeat: partner is alive while these keep arriving
+    hbTimer = setInterval(() => publish({ t: 'presence' }), 2500);
+    publish({ t: 'presence' });
+
+    // liveness watchdog: silence > 11s means the partner dropped
+    watchTimer = setInterval(() => {
+      if (connPeerId && Date.now() - lastSeen > 11000) {
+        connPeerId = null;
+        emitStatus('disconnected');
+      }
+    }, 1000);
+    return true;
   }
 
   /* Host a room. onReady fires when the partner appears. */
-  function host(onReady, onError) {
+  function host(onReady, onError, name) {
     isHost = true;
+    nameLocal = name || 'Player 1';
     const code = makeCode();
-    setupRoom(code, onReady, onError);
+    setup(code, onReady, onError);
     return code;
   }
 
   /* Join a room. Presence-based: keeps searching until the host appears.
-   * After 20s a helpful message shows, but the search CONTINUES — the
-   * connection completes on its own whenever the host's room is detected. */
-  function join(code, onReady, onError) {
+   * After 20s a helpful message shows but the search CONTINUES. */
+  function join(code, onReady, onError, name) {
     isHost = false;
+    nameLocal = name || 'Player 2';
     const upper = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
     if (upper.length !== 4) {
       onError('Enter the 4-letter room code.');
       return;
     }
-    setupRoom(upper, onReady, onError).then(started => {
+    setup(upper, onReady, onError).then(started => {
       if (!started) return;
       setTimeout(() => {
         if (!connPeerId) {
-          onError("Room not found yet — check the code, make sure the host's screen is on, and keep this page open. Still searching…");
+          onError("Room not found yet — check the code and make sure the host's screen is on. Still searching…");
         }
       }, 20000);
     });
   }
 
   function send(obj) {
-    if (!connPeerId) return;
-    const via = peerRoom[connPeerId];
-    if (via && sendRaw[via]) sendRaw[via](obj);
+    publish(obj);
   }
 
   function onMessage(h) { msgHandlers.push(h); }
   function onStatus(h) { statusHandlers.push(h); }
 
+  window.__netDebug = () => ({ hasClient: !!client, brokerConnected: !!(client && client.connected), topicBase, connPeerId, isHost, key: !!cryptoKey });
   return {
     host, join, send, onMessage, onStatus,
     get connected() { return !!connPeerId; },
