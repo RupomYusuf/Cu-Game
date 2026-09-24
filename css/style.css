@@ -487,3 +487,15 @@ input[type="text"]:focus { border-color: var(--rose); }
   0%, 100% { transform: scale(1); box-shadow: 0 8px 24px rgba(0,0,0,.45); }
   50% { transform: scale(1.12); box-shadow: 0 10px 30px rgba(231,84,128,.75); }
 }
+
+/* chat read receipts + typing animation */
+.tick { font-size: .75rem; opacity: .6; }
+.tick.seen { color: #2e9e5b; opacity: 1; font-weight: 700; }
+.typing .dots i {
+  display: inline-block; width: 5px; height: 5px;
+  border-radius: 50%; background: var(--rose);
+  margin-right: 2px; animation: typingBounce 1s infinite;
+}
+.typing .dots i:nth-child(2) { animation-delay: .15s; }
+.typing .dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes typingBounce { 0%,100% { transform: translateY(0); opacity: .5; } 50% { transform: translateY(-4px); opacity: 1; } }

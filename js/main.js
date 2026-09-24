@@ -1,5 +1,5 @@
 /* ============ App shell: lobby, menu, game lifecycle ============ */
-const APP_VERSION = '40'; // bump together with the ?v= in index.html
+const APP_VERSION = '42'; // bump together with the ?v= in index.html
 let playingApart = (function () { try { return localStorage.getItem('cgn-apart') !== 'false'; } catch (e) { return true; } })();
 
 const App = (() => {
@@ -23,14 +23,24 @@ const App = (() => {
   }
 
   /* ---------- global chat (works inside any game) ---------- */
-  const chat = { open: false, unread: 0, msgs: [] };
+  const chat = { open: false, unread: 0, msgs: [], nextId: 1, typingUntil: 0 };
 
   function renderChat() {
     const log = $('#gchat-log');
-    log.innerHTML = chat.msgs.map(m =>
-      m.sys ? `<div class="sys">${esc(m.text)}</div>`
-            : `<div><span class="who">${esc(m.name)}:</span> ${esc(m.text)}</div>`).join('');
+    log.innerHTML = chat.msgs.map(m => {
+      if (m.sys) return `<div class="sys">${esc(m.text)}</div>`;
+      const ticks = m.mine
+        ? (m.seen ? ' <span class="tick seen">✓✓</span>' : ' <span class="tick">✓</span>')
+        : '';
+      return `<div><span class="who">${esc(m.name)}:</span> ${esc(m.text)}${ticks}</div>`;
+    }).join('') + (chat.typingUntil > Date.now()
+      ? `<div class="typing"><span class="who">${esc(partnerName)} is typing</span> <span class="dots"><i></i><i></i><i></i></span></div>`
+      : '');
     log.scrollTop = log.scrollHeight;
+    const head = document.querySelector('.chat-head span');
+    if (head) head.textContent = chat.typingUntil > Date.now()
+      ? `${partnerName} is typing…`
+      : '💬 Chat with your partner';
     const badge = $('#chat-badge');
     badge.style.display = chat.unread > 0 ? 'block' : 'none';
     badge.textContent = chat.unread;
@@ -40,6 +50,8 @@ const App = (() => {
   function openChat() {
     chat.open = true;
     chat.unread = 0;
+    const lastPartnerMsg = [...chat.msgs].reverse().find(m => !m.mine && m.id);
+    if (lastPartnerMsg) Net.send({ t: 'seen', upto: lastPartnerMsg.id });
     $('#chat-panel').classList.add('show');
     renderChat();
     $('#gchat-in').focus();
@@ -56,16 +68,25 @@ const App = (() => {
     const text = inp.value.trim();
     if (!text || !Net.connected) return;
     inp.value = '';
-    chat.msgs.push({ name: myName, text });
+    const id = chat.nextId++;
+    chat.msgs.push({ name: myName, text, id, mine: true });
     if (chat.msgs.length > 200) chat.msgs.shift();
     renderChat();
-    Net.send({ t: 'chat', name: myName, text });
+    Net.send({ t: 'chat', name: myName, text, id });
   }
 
   $('#chat-fab').onclick = openChat;
   $('#chat-close').onclick = closeChat;
   $('#gchat-send').onclick = sendChatMsg;
   $('#gchat-in').addEventListener('keydown', e => { if (e.key === 'Enter') sendChatMsg(); });
+  let lastTypingSent = 0;
+  $('#gchat-in').addEventListener('input', () => {
+    const now = Date.now();
+    if (now - lastTypingSent > 1200 && Net.connected) {
+      lastTypingSent = now;
+      Net.send({ t: 'typing' });
+    }
+  });
 
   /* ---------- toast ---------- */
   let toastTimer = null;
@@ -343,14 +364,25 @@ const App = (() => {
         Deck.mark(d.key, d.i);
         break;
       case 'chat':
-        chat.msgs.push({ name: d.name || partnerName, text: d.text });
+        chat.msgs.push({ name: d.name || partnerName, text: d.text, id: d.id, mine: false });
         if (chat.msgs.length > 200) chat.msgs.shift();
         if (!chat.open) {
           chat.unread++;
           toast('💬 ' + (d.name || partnerName) + ': ' + d.text.slice(0, 60));
+        } else {
+          Net.send({ t: 'seen', upto: d.id }); // blue tick for the sender
         }
         ping();
         renderChat();
+        break;
+      case 'seen':
+        chat.msgs.forEach(m => { if (m.mine && m.id <= d.upto) m.seen = true; });
+        renderChat();
+        break;
+      case 'typing':
+        chat.typingUntil = Date.now() + 3000;
+        renderChat();
+        setTimeout(renderChat, 3200);
         break;
       case 'state':
         if (currentGame && currentGame.id === d.g) {

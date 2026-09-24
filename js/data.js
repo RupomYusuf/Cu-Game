@@ -1081,3 +1081,320 @@ DATA.intimate.extreme.wheel.push(
   "Kiss the camera until one of us breaks",
   "Let the camera follow wherever your hands wander"
 );
+
+
+/* =====================================================
+ * CONTENT EXPANSION PACK 2 — more cards everywhere
+ * ===================================================== */
+
+// Who's More Likely +60
+DATA.likely.push(
+  "…become a viral dance sensation?", "…open a secret bakery?", "…forget their own phone at home?",
+  "…talk to plants?", "…win a costume contest?", "…become a book critic?",
+  "…travel with only a backpack?", "…start a band in the garage?", "…become a chess master?",
+  "…cry watching a cartoon?", "…become a stand-up philosopher?", "…eat cake for breakfast daily?",
+  "…adopt an old retired dog?", "…learn the piano overnight?", "…become a pottery artist?",
+  "…get addicted to a mobile game?", "…become a morning jogger?", "…host a huge Thanksgiving dinner?",
+  "…become a movie director?", "…forget to reply for three days?", "…win an argument with a stranger?",
+  "…become a plant parent expert?", "…start journaling every night?", "…become a local tour guide?",
+  "…fall asleep at a party?", "…become the group chat historian?", "…become a master griller?",
+  "…start a small business?", "…become famous for a weird talent?", "…swim with dolphins?",
+  "…go on a silent retreat?", "…become a night owl blogger?", "…get really into astrology?",
+  "…become the family photographer?", "…become a crossword champion?", "…run a marathon of movies in one day?",
+  "…become a sneaker collector?", "…learn to juggle?", "…become a wedding crasher?",
+  "…become a weather nerd?", "…start a garden?", "…become a baking champion?",
+  "…become the fun aunt or uncle?", "…learn magic tricks?", "…become a trivia champion?",
+  "…start a neighborhood book club?", "…become a weekend fisher?", "…become a theme park superfan?",
+  "…become a DIY repair expert?", "…spend a whole day in a library?", "…become a cat video connoisseur?",
+  "…become a secret poet?", "…become a crossword genius?", "…plan the ultimate surprise party?",
+  "…give the best gifts?", "…become a karaoke legend?", "…survive a week without coffee?",
+  "…get recognized in a foreign city?", "…become the couple everyone envies?", "…love the other more than words can say?"
+);
+
+// This or That +40
+DATA.thisorthat.push(
+  ["Sunrise walk", "Midnight drive"], ["Home movie night", "Classic cinema"],
+  ["Matching mugs", "Matching keychains"], ["Surprise weekend trip", "Planned dream vacation"],
+  ["Breakfast in bed", "Late night snacks"], ["Hold hands everywhere", "Secret hand squeezes"],
+  ["Love song dedication", "Poem recital"], ["Candlelit dinner", "Picnic at dawn"],
+  ["Snowball fight", "Sandcastle contest"], ["Sharing one umbrella", "Dancing in the rain"],
+  ["Giant teddy bear", "Bouquet of roses"], ["Couple's cooking class", "Couple's dance class"],
+  ["Dream house in the mountains", "Dream house by the sea"], ["Notes in lunchboxes", "Texts during work"],
+  ["Stargazing on a roof", "Sunset on the beach"], ["Old soul music", "Modern pop hits"],
+  ["Weekend without phones", "Weekend without plans"], ["Cozy hoodie weather", "Sunny t-shirt weather"],
+  ["Amusement park date", "Aquarium date"], ["Homemade pizza night", "Sushi takeout night"],
+  ["First class flight", "Road trip with snacks"], ["Karaoke duet", "Board game battle"],
+  ["Surprise flowers at work", "Surprise visit at home"], ["Matching tattoos", "Matching rings"],
+  ["Hot chocolate in winter", "Ice cream in summer"], ["City lights apartment", "Countryside cottage"],
+  ["Write vows together", "Exchange gifts together"], ["Morning cuddles", "Night talks"],
+  ["Big wedding with everyone", "Intimate ceremony with few"], ["Adventurous honeymoon", "Relaxing honeymoon"],
+  ["Couples book club", "Couples gym membership"], ["Photo album", "Video montage"],
+  ["Surprise birthday trip", "Surprise anniversary dinner"], ["Funny couple costume", "Elegant couple costume"],
+  ["Learning to cook", "Learning to dance"], ["Painting class", "Pottery class"],
+  ["Roadtrip singing", "Roadtrip quiet"], ["Watch sunrise together", "Watch stars together"],
+  ["Lazy Sunday together", "Adventure Sunday together"], ["Hand-in-hand walk", "Piggyback ride"]
+);
+
+// NHIE +40
+DATA.nhie.push(
+  "…imagined our lives with kids 👶", "…practiced our wedding first dance alone 💃",
+  "…kept a photo of us as my lock screen for years 📱", "…told a taxi driver about you 🚕",
+  "…smiled at my phone in public because of you 😊", "…planned a surprise and spilled the beans 🤫",
+  "…written our names on a foggy window 🪟", "…kept a shirt that smells like you 👕",
+  "…dedicated a song to you silently 🎶", "…imagined you meeting my childhood self 🧒",
+  "…kept a list of movies to watch with you 🎬", "…told my bartender it was a special occasion 🍸",
+  "…saved a meme because it reminded me of you 😹", "…thought about you during my favorite song 🎵",
+  "…waited outside your workplace just to wave 👋", "…kept our first gift's wrapping paper 🎀",
+  "…bragged about you to my grandmother 👵", "…chosen a seat facing you in a group 🪑",
+  "…practiced saying I love you in different languages 🌍", "…imagined our pet's names 🐕",
+  "…told a stranger we're married 💍", "…savored a goodbye for ten extra seconds 🕰️",
+  "…learned your favorite dessert recipe by heart 🍰", "…planned our future house layout 🏡",
+  "…kept a candle lit like it was for us 🕯️", "…smiled during a sad song because of us 🎧",
+  "…kept a secret stash of your favorite snacks 🍫", "…written a letter to future us 💌",
+  "…chosen a hotel because of the bathtub 🛁", "…practiced our anniversary toast 🥂",
+  "…saved the movie stub from our first date 🎞️", "…sung your praise to my family 🗣️",
+  "…taken the long way home just to think of us 🛣️", "…fallen asleep dreaming of our next date 😴",
+  "…kept your side of the bed untouched 🛏️", "…learned your coffee order better than mine ☕",
+  "…told the stars about you 🌟", "…loved you in the quiet ordinary moments ❤️",
+  "…kept every note you ever passed me 📝", "…reassembled a torn photo of us 🖼️"
+);
+
+// Guess My Answer +30
+DATA.guessmy.push(
+  "What's my favorite fruit?", "Tea or coffee — what would I order?",
+  "What's my favorite app on my phone?", "Am I afraid of heights?",
+  "What's my favorite sport to watch?", "What's my shoe style?",
+  "Do I prefer texting or calling?", "What's my favorite ice cream topping?",
+  "What's my favorite board game?", "What would I do on a perfect Sunday?",
+  "What's my favorite snack?", "Do I sing in the car?",
+  "What's my favorite animal?", "How do I sleep — back, side, or stomach?",
+  "What's my favorite childhood cartoon?", "What's my favorite juice?",
+  "What's my favorite weather?", "What's my go-to karaoke song?",
+  "What's my favorite thing about mornings?", "Do I prefer sweet or salty popcorn?",
+  "What's my favorite holiday destination?", "What's my comfort drink?",
+  "What's my favorite candy?", "What's my favorite candle scent?",
+  "What's my favorite thing to do on rainy days?", "What would I name our pet?",
+  "What's my favorite pizza size?", "What's my favorite pair of shoes?",
+  "What's my favorite season for photos?", "What's my favorite dessert at restaurants?"
+);
+
+// Would You Rather +30
+DATA.wyr.push(
+  ["Be able to pause time", "Be able to rewind time"], ["Live in a movie", "Live in a video game"],
+  ["Never feel cold again", "Never feel tired again"], ["Have a self-cleaning home", "Have a self-cooking kitchen"],
+  ["Always know when someone lies", "Always know what gift to give"], ["Be a famous chef", "Be a famous musician"],
+  ["Explore the past", "Explore the future"], ["Have unlimited hugs", "Have unlimited surprises"],
+  ["Teleport anywhere", "Read each other's minds"], ["Never lose your keys", "Never lose your phone"],
+  ["Be the funniest person alive", "Be the smartest person alive"], ["Live without music", "Live without the internet"],
+  ["Have a pet dragon", "Have a pet unicorn"], ["Be able to breathe underwater", "Be able to fly"],
+  ["Only watch comedies", "Only watch thrillers"], ["Eat the same meal forever", "Never eat your favorite food again"],
+  ["Have a rewind for arguments", "A highlight reel of memories"], ["Be rich but busy", "Be comfortable with free time"],
+  ["Always be honest", "Always be kind"], ["Meet your soulmate late", "Meet them early with struggles"],
+  ["Have a house on the beach", "A cabin in the woods"], ["Be a talented dancer", "Be a talented singer"],
+  ["Have infinite money", "Have infinite time"], ["Remember everything", "Forget nothing important"],
+  ["Be famous for art", "Be famous for science"], ["Have perfect health", "Have perfect wealth"],
+  ["Live in your favorite city", "Live anywhere with your partner"], ["Never do laundry", "Never do dishes"],
+  ["Have a personal librarian", "Have a personal tour guide"], ["Celebrate every day like a holiday", "Make one day perfect forever"]
+);
+
+// Finish My Sentence +25
+DATA.finish.push(
+  "Your laugh always makes me ___",
+  "I never told you this, but ___",
+  "Our next adventure should be ___",
+  "When you're sad, I want to ___",
+  "The moment I fell for you was ___",
+  "I feel safest when ___",
+  "The first thing I'd buy you is ___",
+  "Our dream home has a room for ___",
+  "You make ordinary days feel ___",
+  "I want to grow old and ___",
+  "The trait we share is ___",
+  "When I imagine our wedding, I see ___",
+  "Your voice sounds like ___",
+  "The best gift you gave me was ___",
+  "I promise to always ___",
+  "Our inside joke about ___ still makes me laugh",
+  "If we could teleport right now, we'd be at ___",
+  "You'd never survive a horror movie without ___",
+  "Together we could totally open ___",
+  "The first place I'd take you back to is ___",
+  "When we're 80, we'll be ___",
+  "I knew you were different when ___",
+  "Your hugs feel like ___",
+  "My favorite photo of us is the one where ___",
+  "Nothing makes my day better than ___"
+);
+
+// Riddles +20
+DATA.riddles.push(
+  { e: "🐝🎬", a: "bee movie" }, { e: "🌙🎸", a: "moon guitar" }, { e: "🧜‍♀️🌊", a: "mermaid" },
+  { e: "🏠🔑", a: "house key" }, { e: "🍎📱", a: "apple phone" }, { e: "🦴🐕", a: "dog bone" },
+  { e: "🍪🥛", a: "cookies and milk" }, { e: "🎸🔥", a: "guitar hero" },
+  { e: "🎂🎉", a: "birthday party" }, { e: "💍👰", a: "wedding ring" }, { e: "🎆🌃", a: "fireworks night" },
+  { e: "🚀🌕", a: "moon landing" }, { e: "🧲🧲", a: "magnet pair" }, { e: "❄️☃️", a: "snowman" },
+  { e: "🍉🏖️", a: "beach picnic" }, { e: "🎤🎬", a: "karaoke" }, { e: "🧸❤️", a: "teddy love" },
+  { e: "☕📰", a: "morning news" }, { e: "🌹💌", a: "love note" }, { e: "🎩🐇", a: "magic trick" }
+);
+
+// Word Rush +20 categories
+DATA.rush.push(
+  "Things you say when tired", "Best pizza toppings", "Olympic sports", "Zoo animals",
+  "Things in a first-aid kit", "Music genres", "Rom-com tropes", "Items in a purse",
+  "Things that come in pairs", "Types of hugs", "Things worth splurging on", "Camping essentials",
+  "Bad luck charms", "Types of dances", "Things you'd bring to a desert island",
+  "Ways to say hello", "Things that make you cringe", "Supermarket aisles",
+  "Reasons to smile today", "Things better together"
+);
+
+// Island item pool (per-scene selection of 12)
+DATA.islandItems.push('A deck of cards', 'A warm blanket', 'Insect repellent', 'A radio', 'A mirror', 'Rope', 'A hat', 'Sunglasses', 'A notebook & pen', 'Toothbrush', 'A lighter', 'Your favorite snack');
+
+// 60-Second Challenge video dares (playing apart — record a video of the task)
+DATA.intimate.soft.videoDares = [
+  "Record a 60-second video: kiss the camera like it's my lips, slowly.",
+  "Record yourself blowing a kiss in extreme slow motion.",
+  "On video: say everything you love about me in one minute.",
+  "Record a video of you dancing to our song — one minute, no stopping.",
+  "Video: give the camera your most loving look for a full minute.",
+  "Record a bedtime message video — whisper it, sixty seconds.",
+  "Video: describe our perfect date from start to finish in one minute.",
+  "Record yourself drawing a heart on your palm for the camera.",
+  "One-minute video: recreate our first kiss on camera.",
+  "Record a video tour of the place you'd take me on our next date.",
+  "Video: sing our song for a full minute, soft and close to the mic.",
+  "Record a 60-second video of everything you want to tell me today.",
+];
+DATA.intimate.extreme.videoDares = [
+  "Record a 60-second video: take off one item of clothing, teasing the whole way.",
+  "One-minute video: describe in detail what you want tonight. No cutting.",
+  "Record yourself kissing the camera like it's my neck. One minute. Slow.",
+  "Video: lights low, one minute, let your hands show what you wish mine were doing.",
+  "Record a one-minute video whispering your dirtiest fantasy. Unedited.",
+  "One minute on camera: trace where you want to be kissed. Slowly. Everywhere you dare.",
+  "Record yourself saying my name the way you'll say it tonight. One minute.",
+  "Video: a private show to one song. One minute. Your rules, your dare.",
+  "One-minute video: undress your voice — describe what you'd take off first, and why.",
+  "Record sixty seconds of exactly how you want tonight to end.",
+  "Video: kiss down from the lens as far as you dare. The timer's running.",
+  "Record a one-minute video with the lights off — let the sounds tell me everything.",
+];
+
+// Level Up: 100 escalating levels
+DATA.intimate.extreme.levels = (function () {
+  const tiers = [
+    [ // 1-20 · warm & playful
+      "Send a snap of your lips, inches from the lens 💋",
+      "Kiss the camera for fifteen seconds straight 🎥",
+      "Tell me the first thing you'd do if I were beside you 👀",
+      "Whisper something sweet — then something less sweet 😏",
+      "Blow the slowest kiss of your life on camera 💌",
+      "Describe your favorite kiss with me in detail 🗣️",
+      "Say my name three ways: sweet, teasing, desperate 🎙️",
+      "Give the camera your 'come here' look for fifteen seconds 👀",
+      "Wink slowly, then bite your lip. Hold it. 😏",
+      "Tell me the moment today you wanted to kiss me most 🌙",
+      "Kiss the camera like it's freezing and I'm warm 🔥",
+      "Say three compliments — one for my mind, one heart, one face 💞",
+      "Trace a heart on your palm and show me ✋",
+      "Do your best 'I miss you' face for ten seconds 🥺",
+      "Describe our dream date in five details 🌹",
+      "Moan my name. Softly. Just once 😮‍💨",
+      "Reenact the way you'd greet me at the airport 🛬",
+      "Sing one line of our song, soft and close 🎶",
+      "Show me your favorite spot to be kissed — trace it slowly 🖐️",
+      "Tell me a fantasy in exactly one sentence 🤫"
+    ],
+    [ // 21-40 · teasing
+      "One item of clothing, off. On camera. Now 🔥",
+      "Slowly undo one button. Tease the whole way 🖤",
+      "Give the camera a fifteen-second undressing stare 😏",
+      "Kiss the camera like it's my neck. Slowly 🌙",
+      "Describe what you're wearing to bed… and what you're not 😈",
+      "Trace with your hands where mine should be 🖐️",
+      "Whisper your dirtiest thought about me. Don't hold back 🎙️",
+      "Turn off the lights — let the sound tell me everything 🌑",
+      "Kiss down from the camera as far as you dare 💋",
+      "Show me where my name would look good written on you ✍️",
+      "Dance for one song with the lights low 🌀",
+      "Say exactly where you want my hands right now 🖤",
+      "Bite your lip and say my name. That's it. That's the level 😮‍💨",
+      "Describe the last time we were close — your favorite angle 🎬",
+      "Send the look that always works on you. Hold it 😌",
+      "Tell me a fantasy in one unbroken minute 🎙️",
+      "Run your hands slowly where you wish mine were 🫶",
+      "Whisper what you'd do first, second, and third if I walked in 🚪",
+      "Give me a private show to one song — my pick next level 🎵",
+      "Kiss the camera the way you'd kiss my neck. Then lower 💋"
+    ],
+    [ // 41-60 · daring
+      "Lose one more piece. Tease first. 🖤",
+      "One minute of you, lights off, sounds only 🌑",
+      "Moan my name — the way you'll say it tonight 😮‍💨",
+      "Reveal the first thing you'd take off if I were there 🔥",
+      "Describe how tonight ends for us. In detail 🌙",
+      "Kiss downward from the lens. Slowly. Far 💋",
+      "Let the camera follow wherever your hands wander 🖐️",
+      "Say the naughtiest sentence you can imagine. Then blush 😈",
+      "Give a one-minute show to any song you choose 🎵",
+      "Tell me exactly what you're wearing. Then change it 👕",
+      "Trace every spot you want my lips on 📍",
+      "Whisper your fantasy like it's a secret. Full detail 🤫",
+      "Pose the way you'd greet me after a long trip 😏",
+      "Show me your favorite curves, shadow edition 🌑",
+      "Kiss the camera with everything you've got. One minute 💋",
+      "Say three things you'd do to me. In order. Slowly 🗣️",
+      "The towel shot — the last frame before it goes 🚿",
+      "Write 'yours tonight' on your skin and show me ✍️",
+      "Straddle the pillow. Yes really. Silhouette snap 😈",
+      "One minute: undress your voice. Describe everything 🎙️"
+    ],
+    [ // 61-80 · intense
+      "Video: a slow 360° spin — nothing left to hide 🌀",
+      "Lights off, flash on. One shot. No preview 📱",
+      "Skin-to-skin for the rest of the game. On camera, wherever you dare 🔥",
+      "Mid-undress moment — the frame before the moment 🖤",
+      "Voice note: sixty seconds of the sounds I love 🎙️",
+      "The 'no clothes survived the night' floor shot 🧺",
+      "POV: I just walked in. First three seconds, on camera 🚪",
+      "Describe your favorite memory of us under the covers. Every detail 🌙",
+      "Blindfold yourself with whatever's nearby for two levels 👀",
+      "Kiss the camera from my lips down. As far as you dare 💋",
+      "One minute: let your hands tell me what your mouth can't 🖐️",
+      "The sheet-only shot — from above 🛏️",
+      "Whisper exactly how you want tonight to begin 🌙",
+      "Show me the pose you'd greet me in. Full commitment 😈",
+      "Your call: one snap, no rules, my imagination does the rest 🔥",
+      "Trace the path of tonight with one finger. Slowly 🖐️",
+      "Say the three words you've never said on camera 🗣️",
+      "Give me the look that means 'now' — hold it for thirty seconds 😏",
+      "Reenact our most passionate kiss. Convince me 💋",
+      "One minute: describe what you'd do with a free pass and no distance 😈"
+    ],
+    [ // 81-100 · extreme
+      "Full send: one snap, no rules, total trust 🔥",
+      "Everything off but one item. Your choice which stays 🖤",
+      "One-minute video: the most daring thing you've ever done on camera 🎥",
+      "Describe your wildest fantasy about us. Nothing off the table 🌙",
+      "The silhouette that leaves nothing to imagination 🌑",
+      "Kiss the camera the way you'd wake me up. Full minute 💋",
+      "Show me exactly what you'd wear to make me forget my name 👙",
+      "One minute: hands, camera, no instructions 🖐️",
+      "Whisper the thing you've never said during our intimate moments 🤫",
+      "The pose from behind — shoulders, back, everything 🌚",
+      "Video: whatever 'I need you' looks like right now 💭",
+      "Say my name until it sounds like a confession 😮‍💨",
+      "The last item goes. One frame. Your courage 🖤",
+      "Reenact the most passionate scene from any movie. Convince me 🎬",
+      "One minute of you and the mirror. Creativity encouraged 🪞",
+      "Describe night one of our next meetup. Hour by hour 🌙",
+      "Send the snap you'd delete in the morning but know I'd save 📱",
+      "The 'come over right now' energy — captured in one photo 😈",
+      "Total trust finale: one full minute, anything you choose, everything on the line 🔥",
+      "You made it to 100 — tonight, when we finally meet, level 100 comes true 🏆💋"
+    ]
+  ];
+  const out = [];
+  for (const tier of tiers) for (const t of tier) out.push(t);
+  return out; // exactly 100
+})();
