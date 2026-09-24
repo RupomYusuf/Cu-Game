@@ -1,5 +1,5 @@
 /* ============ App shell: lobby, menu, game lifecycle ============ */
-const APP_VERSION = '37'; // bump together with the ?v= in index.html
+const APP_VERSION = '38'; // bump together with the ?v= in index.html
 let playingApart = (function () { try { return localStorage.getItem('cgn-apart') !== 'false'; } catch (e) { return true; } })();
 
 const App = (() => {
@@ -107,6 +107,8 @@ const App = (() => {
   // random default nickname — names are optional, zero typing required
   const NICKS = ['Honey', 'Sweetie', 'Cutie', 'Babe', 'Darling', 'Sunshine', 'Boo', 'Love', 'Angel', 'Cherry'];
   $('#name-input').value = NICKS[Math.floor(Math.random() * NICKS.length)];
+  const vs = document.querySelector('#ver-stamp');
+  if (vs) vs.textContent = 'v' + APP_VERSION;
 
   // invited via link? hide the manual-code path and get them in with one tap
   let linkCode = '';
@@ -361,6 +363,10 @@ const App = (() => {
   });
 
   Net.onStatus(s => {
+    if (s && s.startsWith('path-')) {
+      toast('🔗 Connected via ' + (s === 'path-nostr' ? 'relay network 1' : 'relay network 2'));
+      return;
+    }
     if (s === 'broker-lost') {
       const bs = document.querySelector('#broker-status');
       if (bs) { bs.textContent = '⚠️ Connection service dropped — reconnecting…'; }
