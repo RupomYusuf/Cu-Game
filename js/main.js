@@ -1,5 +1,5 @@
 /* ============ App shell: lobby, menu, game lifecycle ============ */
-const APP_VERSION = '38'; // bump together with the ?v= in index.html
+const APP_VERSION = '39'; // bump together with the ?v= in index.html
 let playingApart = (function () { try { return localStorage.getItem('cgn-apart') !== 'false'; } catch (e) { return true; } })();
 
 const App = (() => {

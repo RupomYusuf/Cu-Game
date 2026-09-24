@@ -100,7 +100,40 @@ const Net = (() => {
 
     for (const key of Object.keys(mods)) {
       try {
-        const r = mods[key].joinRoom({ appId: APP_ID }, 'room-' + code);
+        const rtcConfig = {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            // TURN relays: without these, two phones on different carriers'
+            // networks usually CANNOT link directly. Two providers for backup.
+            { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+            { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+            { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+            { urls: 'turns:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+            { urls: 'turn:standard.relay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+            { urls: 'turn:standard.relay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+            { urls: 'turn:standard.relay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+            { urls: 'turns:standard.relay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+          ],
+          iceCandidatePoolSize: 10
+        };
+        const r = mods[key].joinRoom({ appId: APP_ID, rtcConfig }, 'room-' + code);
+        // diagnostics: if we see the partner via signaling but their link
+        // stays in 'failed' state, the relay/NAT stage is what's broken
+        setTimeout(() => {
+          try {
+            if (typeof r.getPeers !== 'function') return;
+            const peers = r.getPeers();
+            for (const pid in peers) {
+              if (pid !== connPeerId) continue;
+              const pc = peers[pid];
+              const st = pc.iceConnectionState || pc.connectionState;
+              if (st === 'failed' || st === 'disconnected' || st === 'closed') {
+                onError('You two FOUND each other, but the networks refuse the final link (relay failed). Try: put ONE phone on mobile data, then reconnect.');
+              }
+            }
+          } catch (e) {}
+        }, 22000);
         rooms[key] = r;
         const [send, onMsg] = r.makeAction('g');
         sendRaw[key] = o => { try { send(o); } catch (e) {} };
