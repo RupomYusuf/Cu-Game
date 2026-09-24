@@ -1853,41 +1853,57 @@ Games.story = {
  * 5p. Word Rush
  * ===================================================== */
 Games.rush = {
-  name: 'Word Rush', icon: '🔤', desc: 'Shared category race — first to 20 points wins',
+  name: 'Word Rush', icon: '🔤', desc: 'Hidden answers — reveal after the timer! First to 20',
   init(root, api) {
     const TARGET = 20;
-    const S = { cat: null, scores: { me: 0, them: 0 }, words: [], endAt: 0, iv: null, winner: null };
+    const S = { cat: null, scores: { me: 0, them: 0 }, myWords: [], theirWords: [], revealed: false, endAt: 0, iv: null, winner: null };
 
     root.innerHTML = `<div class="game-panel" id="wr-area"></div>`;
     const area = root.querySelector('#wr-area');
 
     function render() {
       if (S.iv) { clearInterval(S.iv); S.iv = null; }
-      const wordsHtml = S.words.length
-        ? S.words.map(w => `<p style="margin:3px 0"><b>${esc(w.by)}:</b> ${esc(w.text)}</p>`).join('')
-        : '<p class="muted" style="font-size:.9rem">No words yet — type fast! ⚡</p>';
+      const revealed = S.revealed;
+      let wordsHtml = '';
+      if (revealed) {
+        const mine = S.myWords.map(w => `<p style="margin:3px 0"><b>🙋 ${esc(api.myName)}:</b> ${esc(w)}</p>`).join('');
+        const theirs = S.theirWords.length
+          ? S.theirWords.map(w => `<p style="margin:3px 0"><b>💗 ${esc(api.partnerName)}:</b> ${esc(w)}</p>`).join('')
+          : '<p style="margin:3px 0"><i>💗 ' + esc(api.partnerName) + ' typed nothing this round</i></p>';
+        wordsHtml = `<div style="text-align:left;max-width:440px;margin:10px auto;border-top:2px solid var(--rose-light);padding-top:8px">
+          <p class="muted" style="font-size:.85rem;margin-bottom:4px">This round's answers:</p>
+          ${mine}${theirs}</div>`;
+      } else {
+        wordsHtml = `<p class="muted" style="font-size:.9rem;margin-top:8px">🔒 Your answers are hidden until the timer ends — no cheating! You've typed <b>${S.myWords.length}</b>.</p>`;
+      }
+      let banner = '';
+      if (S.winner) {
+        banner = `<div class="result-banner ${S.winner === 'me' ? 'win' : 'lose'}" style="margin-top:10px">${S.winner === 'me' ? 'YOU WIN! 🏆 First to ' + TARGET + '!' : esc(api.partnerName) + ' reached ' + TARGET + ' first!'}</div>`;
+      }
       area.innerHTML = `
         <h3 class="likely-question" style="font-size:1.5rem">Word Rush 🔤</h3>
         <p class="game-prompt">Category:</p>
         <div class="likely-question" style="font-size:1.8rem">${S.cat !== null ? esc(DATA.rush[S.cat % DATA.rush.length]) : '…'}</div>
-        <div class="draw-word" id="wr-count" style="font-size:2.2rem">15</div>
-        <p class="game-prompt">${S.winner ? '' : 'Type anything that fits — each word = 1 point. First to ' + TARGET + ' wins!'}</p>
+        <div class="draw-word" id="wr-count" style="font-size:2.2rem">${S.winner ? '🏆' : '15'}</div>
+        <p class="game-prompt">${S.winner ? '' : (revealed ? 'Next category coming up…' : 'Type anything that fits — each word = 1 point. First to ' + TARGET + ' wins!')}</p>
         <div id="wr-inputrow"></div>
         <div style="margin-top:12px"><span class="card-tag">You: ${S.scores.me}</span>
-        <span class="card-tag" style="margin-left:6px">${esc(api.partnerName)}: ${S.scores.them}</span></div>
-        <div id="wr-words" style="text-align:left;max-width:440px;margin:10px auto;max-height:180px;overflow-y:auto">${wordsHtml}</div>`;
-      const list = area.querySelector('#wr-words');
-      list.scrollTop = list.scrollHeight;
+        <span class="card-tag" style="margin-left:6px">${esc(api.partnerName)}: ${S.scores.them}</span>
+        <span class="card-tag" style="margin-left:6px;background:#f0e6d3">🎯 ${TARGET} to win</span></div>
+        ${banner}
+        ${wordsHtml}`;
       if (S.winner) {
-        area.querySelector('#wr-count').textContent = '🏆';
-        area.querySelector('#wr-inputrow').innerHTML = `
-          <div class="result-banner ${S.winner === 'me' ? 'win' : 'lose'}">${S.winner === 'me' ? 'YOU WIN! 🏆 You reached ' + TARGET + ' first!' : esc(api.partnerName) + ' reached ' + TARGET + ' first!'}</div>
-          <button class="btn btn-primary" id="wr-again" style="margin-top:10px">Play again ↺</button>`;
+        area.querySelector('#wr-inputrow').innerHTML = `<button class="btn btn-primary" id="wr-again" style="margin-top:10px">Play again ↺</button>`;
         area.querySelector('#wr-again').onclick = () => {
-          if (api.isHost) startRound(true);
+          if (api.isHost) {
+            S.scores = { me: 0, them: 0 };
+            S.winner = null;
+            startRound();
+          }
         };
         return;
       }
+      if (revealed) return; // input hidden during reveal window
       const row = area.querySelector('#wr-inputrow');
       row.innerHTML = `
         <div class="chat-input-row" style="max-width:420px;margin:0 auto">
@@ -1897,58 +1913,96 @@ Games.rush = {
       const submit = () => {
         const v = row.querySelector('#wr-in').value.trim();
         if (!v || S.winner) return;
+        row.querySelector('#wr-in').value = '';
+        S.myWords.push(v);
         S.scores.me++;
-        S.words.push({ by: api.myName, text: v });
         render();
-        api.send({ kind: 'wr-word', text: v, score: S.scores.me, win: S.scores.me >= TARGET });
+        api.send({ kind: 'wr-score', score: S.scores.me, win: S.scores.me >= TARGET });
+        if (S.scores.me >= TARGET && !S.winner) {
+          S.winner = 'me';
+          revealMine();
+          render();
+        }
       };
       row.querySelector('#wr-add').onclick = submit;
       row.querySelector('#wr-in').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
-      startTimer();
     }
 
-    function startTimer() {
-      S.endAt = Date.now() + 15000;
+    function startTimer(explicitEndAt) {
+      S.endAt = explicitEndAt || (Date.now() + 15000);
       S.iv = setInterval(() => {
         const left = Math.max(0, Math.ceil((S.endAt - Date.now()) / 1000));
         const el = area.querySelector('#wr-count');
-        if (el) el.textContent = left;
-        if (left <= 0 && api.isHost && !S.winner) startRound(false);
+        if (el && !S.winner && !S.revealed) el.textContent = left;
+        if (left <= 0 && !S.revealed) roundEnd();
       }, 250);
     }
 
-    function startRound(broadcast) {
+    /* time's up: publish my words, reveal when both lists are in */
+    function roundEnd() {
+      if (S.revealed) return;
+      S.revealed = true;
       if (S.iv) { clearInterval(S.iv); S.iv = null; }
-      S.cat = api.draw('rush', DATA.rush.length);
-      S.words = [];
-      if (S.scores.me >= TARGET || S.scores.them >= TARGET) S.winner = S.scores.me >= TARGET ? 'me' : 'them';
+      api.send({ kind: 'wr-reveal', words: S.myWords, score: S.scores.me });
       render();
-      api.send({ kind: 'wr-start', cat: S.cat });
+    }
+
+    startTimer(); // runs once per round
+
+    /* host drives the next round after the reveal window */
+    S.nextTimer = null;
+    function scheduleNext() {
+      if (!api.isHost || S.winner) return;
+      if (S.nextTimer) clearTimeout(S.nextTimer);
+      S.nextTimer = setTimeout(() => {
+        S.cat = api.draw('rush', DATA.rush.length);
+        S.myWords = [];
+        S.theirWords = [];
+        S.revealed = false;
+        render();
+        api.send({ kind: 'wr-start', cat: S.cat });
+      }, 8000);
     }
 
     if (api.isHost) {
       S.cat = api.draw('rush', DATA.rush.length);
       api.send({ kind: 'wr-start', cat: S.cat });
+    } else {
+      api.send({ kind: 'wr-sync' }); // get the current round if one is running
     }
-    render();
     return {
       onMsg(d) {
-        if (d.kind === 'wr-start') {
+        if (d.kind === 'wr-sync') {
+          // host answers a late opener with the live round
+          if (S.cat !== null) api.send({ kind: 'wr-start', cat: S.cat, remain: Math.max(1, S.endAt - Date.now()) });
+        } else if (d.kind === 'wr-start') {
           if (S.iv) { clearInterval(S.iv); S.iv = null; }
+          if (S.nextTimer) { clearTimeout(S.nextTimer); S.nextTimer = null; }
           S.cat = d.cat;
-          S.words = [];
+          S.myWords = [];
+          S.theirWords = [];
+          S.revealed = false;
           render();
-        } else if (d.kind === 'wr-word') {
+          startTimer(d.remain ? Date.now() + d.remain : undefined);
+        } else if (d.kind === 'wr-score') {
           S.scores.them = d.score;
-          S.words.push({ by: api.partnerName, text: d.text });
           if (d.win) S.winner = 'them';
           render();
+        } else if (d.kind === 'wr-reveal') {
+          S.theirWords = d.words || [];
+          S.revealed = true;
+          render();
+          scheduleNext();
         }
       },
-      destroy() { if (S.iv) clearInterval(S.iv); }
+      destroy() {
+        if (S.iv) clearInterval(S.iv);
+        if (S.nextTimer) clearTimeout(S.nextTimer);
+      }
     };
   }
 };
+
 Games.intimate = {
   name: 'Intimate 🔞', icon: '💋', desc: 'Real games · 18+ · you two only',
   init(root, api) {
