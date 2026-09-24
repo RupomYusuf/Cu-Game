@@ -2748,9 +2748,11 @@ Games.intimate = {
             }
             break;
           case 'tod-done':
+            // both sides toggle once so local turn state stays in sync
             if (S.tod) { S.tod.showing = null; S.tod.turn ^= 1; if (S.mode === 'tod') render(); }
             break;
           case 'tod-pass':
+            // both sides toggle once so local turn state stays in sync
             if (S.tod) { S.tod.showing = null; S.tod.passes.them++; S.tod.turn ^= 1; if (S.mode === 'tod') render(); }
             break;
           case 'timer':
