@@ -189,9 +189,11 @@ const Net = (() => {
     client.on('message', (topic, payload) => {
       decrypt(payload.toString()).then(msg => handleIncoming(msg, onReady));
     });
-    client.subscribe(topicBase + 'data', { qos: 0 }, err => {
-      if (err) onError('Broker subscription failed — try again.');
-    });
+    const doSub = () => { try { client.subscribe(topicBase + 'data', { qos: 1 }); } catch (e) {} };
+    doSub();
+    // mqtt.js does NOT resubscribe after a socket reconnect - without this
+    // the player silently stops receiving everything after a phone lock
+    client.on('connect', doSub);
 
     // presence heartbeat: partner is alive while these keep arriving
     hbTimer = setInterval(() => publish({ t: 'presence' }), 2500);
