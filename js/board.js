@@ -1173,6 +1173,7 @@
           if (api.isHost) {
             if (d.kind === 'st') { render(d.hv); return; }
             if (d.kind === 'act' && d.a) {
+            if (d.kind === 'resync-req') { broadcast(); return; }
               if (d.a.type === 'move' && S.turn === 'b' && !S.over) {
                 hostApplyMove(d.a.from, d.a.to, d.a.promo);
                 selIdx = -1;
