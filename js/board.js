@@ -302,10 +302,12 @@
       function applyView(d) {
         render(api.isHost ? d.hv : d.gv);
       }
+      if (api.isHost) broadcast(); else render({ phase: 'place', confirmed: { h: false, g: false }, log: [] });
       if (api.isHost) broadcast(); else render();
       return {
         onMsg(d) {
           if (api.isHost) {
+            if (d.kind === 'resync-req') { broadcast(); return; }
             if (d.kind === 'act' && d.a) {
               if (d.a.type === 'confirm') hostConfirmFleet('g', d.a.cells);
               else if (d.a.type === 'attack') hostAttack('g', d.a.idx);
@@ -581,6 +583,7 @@
       return {
         onMsg(d) {
           if (api.isHost) {
+            if (d.kind === 'resync-req') { broadcast(); return; }
             if (d.kind === 'act' && d.a && !S.over) {
               let err = null;
               if (d.a.type === 'play') err = hostPlay('g', d.a.idx, d.a.chosen);
@@ -810,6 +813,7 @@
       return {
         onMsg(d) {
           if (api.isHost) {
+            if (d.kind === 'resync-req') { broadcast(); return; }
             if (d.kind === 'act' && d.a && !S.over) {
               if (d.a.type === 'roll') hostRoll('g');
               else if (d.a.type === 'move') hostMove('g', d.a.ti);

@@ -20,6 +20,13 @@ const Net = (() => {
     'wss://broker.hivemq.com:8884/mqtt',
     'wss://broker-cn.emqx.io:8084/mqtt'
   ];
+  // both players derive the SAME broker from the room code — failover that
+  // only affects one client would split the two players onto isolated brokers
+  function brokerFor(code) {
+    let h = 0;
+    for (const ch of String(code)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return BROKERS[h % BROKERS.length];
+  }
 
   const selfId = 'gn-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
   let client = null;
@@ -79,24 +86,28 @@ const Net = (() => {
   }
 
   /* ---- broker connection with failover ---- */
-  function connectBroker() {
+  function connectBroker(code) {
     return new Promise(resolve => {
-      let i = 0;
+      const url = brokerFor(code); // deterministic: same broker for both players
+      let attempts = 0;
       const tryNext = () => {
-        if (i >= BROKERS.length) { resolve(null); return; }
-        const url = BROKERS[i++];
+        if (attempts >= 5) { resolve(null); return; }
+        attempts++;
         let settled = false;
         let c;
         try {
           c = mqtt.connect(url, {
-            clientId: selfId + Math.random().toString(36).slice(2, 6),
+            clientId: selfId, // stable id so the broker keeps our queued messages
             keepalive: 30,
-            reconnectPeriod: 4000,
+            reconnectPeriod: 2000,
             connectTimeout: 8000,
-            clean: true
+            clean: false, // persistent session: broker queues messages while we sleep
           });
         } catch (e) { tryNext(); return; }
-        c.on('connect', () => { if (!settled) { settled = true; resolve(c); } });
+        c.on('connect', () => {
+          if (settled) { emitStatus('resync'); return; } // reconnect after drop
+          settled = true; resolve(c);
+        });
         c.on('error', () => { if (!settled) { settled = true; try { c.end(true); } catch (e) {} tryNext(); } });
         c.on('close', () => { if (!settled) { settled = true; tryNext(); } });
       };
@@ -104,15 +115,27 @@ const Net = (() => {
     });
   }
 
+  let midCounter = 0;
+  const seenMids = [];
+  const seenMidSet = new Set();
+  let pubs = 0, pubErrs = [];
   function publish(obj) {
     if (!client) return;
+    obj = Object.assign({}, obj, { _mid: ++midCounter + ':' + selfId });
+    pubs++;
     encrypt(obj).then(s => {
-      try { client.publish(topicBase + 'data', s, { qos: 0 }); } catch (e) {}
-    });
+      try { client.publish(topicBase + 'data', s, { qos: 1 }); } catch (e) { pubErrs.push(String(e).slice(0, 80)); }
+    }).catch(e => pubErrs.push('enc: ' + String(e).slice(0, 80)));
   }
 
   function handleIncoming(msg, onReady) {
     if (!msg || msg.f === selfId) return; // our own echo
+    if (msg._mid) {
+      if (seenMidSet.has(msg._mid)) return; // QoS1 duplicate
+      seenMidSet.add(msg._mid);
+      seenMids.push(msg._mid);
+      if (seenMids.length > 500) seenMidSet.delete(seenMids.shift());
+    }
     lastSeen = Date.now();
     if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
     const isNew = connPeerId === null;
@@ -156,7 +179,7 @@ const Net = (() => {
     tr('derive done, key=' + !!cryptoKey);
     topicBase = 'gamesnight/v1/' + code + '/';
     tr('broker resolving…');
-    const c = await connectBroker();
+    const c = await connectBroker(code);
     tr('broker done, has client=' + !!c);
     if (!c) {
       onError("Can't reach the message broker — check your internet, then try again.");
@@ -220,7 +243,7 @@ const Net = (() => {
   function onMessage(h) { msgHandlers.push(h); }
   function onStatus(h) { statusHandlers.push(h); }
 
-  window.__netDebug = () => ({ hasClient: !!client, brokerConnected: !!(client && client.connected), topicBase, connPeerId, isHost, key: !!cryptoKey });
+  window.__netDebug = () => ({ hasClient: !!client, brokerConnected: !!(client && client.connected), topicBase, connPeerId, isHost, key: !!cryptoKey, pubs, pubErrs, mids: midCounter });
   return {
     host, join, send, onMessage, onStatus,
     get connected() { return !!connPeerId; },

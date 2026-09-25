@@ -1,5 +1,5 @@
 /* ============ App shell: lobby, menu, game lifecycle ============ */
-const APP_VERSION = '45'; // bump together with the ?v= in index.html
+const APP_VERSION = '49'; // bump together with the ?v= in index.html
 let playingApart = (function () { try { return localStorage.getItem('cgn-apart') !== 'false'; } catch (e) { return true; } })();
 
 const App = (() => {
@@ -353,6 +353,15 @@ const App = (() => {
         }
         startGame(d.g);
         toast(`Playing ${Games[d.g].name}!`);
+        break;
+      case 'resync':
+        // our socket reconnected after a drop — ask the host for fresh state
+        App.send({ t: 'resync-req' });
+        break;
+      case 'resync-req':
+        if (currentGame && currentGame.instance && currentGame.instance.onMsg) {
+          currentGame.instance.onMsg({ kind: 'resync-req' });
+        }
         break;
       case 'apart':
         playingApart = d.v;
