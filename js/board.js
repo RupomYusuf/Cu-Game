@@ -302,6 +302,7 @@
       function applyView(d) {
         render(api.isHost ? d.hv : d.gv);
       }
+      if (api.isHost) broadcast(); else render();
       return {
         onMsg(d) {
           if (api.isHost) {
